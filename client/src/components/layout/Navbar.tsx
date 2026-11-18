@@ -4,9 +4,23 @@ import { ArrowUpRight, House, Menu, X } from "lucide-react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 
 const navigationLinks = [
-  { label: "Home", to: "/", end: true },
-  { label: "Find a home", to: "/properties" },
-  { label: "How it works", to: "/how-it-works" },
+  {
+    label: "Home",
+    to: "/",
+    end: true,
+  },
+  {
+    label: "Find a home",
+    to: "/properties",
+  },
+  {
+    label: "My Enquiries",
+    to: "/my-enquiries",
+  },
+  {
+    label: "Dashboard",
+    to: "/dashboard",
+  },
 ];
 
 function Navbar() {

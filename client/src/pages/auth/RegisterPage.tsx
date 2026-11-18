@@ -65,7 +65,7 @@ export default function RegisterPage() {
 
   return (
     <main className="flex min-h-[calc(100vh-68px)] items-center justify-center bg-canvas px-4 py-8 sm:py-10">
-      <div className="w-full max-w-2xl rounded-2xl border border-border bg-white p-6 shadow-card sm:p-9">
+      <div className="w-full max-w-3xl rounded-2xl border border-border bg-white p-6 shadow-card sm:p-9">
         {/* Heading */}
         <div className="mb-7 text-center">
           <h1 className="font-display text-3xl font-semibold text-ink sm:text-4xl">
@@ -83,7 +83,7 @@ export default function RegisterPage() {
             I want to join Dwello as a
           </h2>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 mt-2">
             <button
               type="button"
               onClick={() => setRole("tenant")}

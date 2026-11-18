@@ -16,6 +16,8 @@ import PropertyGallery from "../../components/property/PropertyGallery";
 import { MOCK_PROPERTIES } from "./PropertiesPage";
 import Button from "../../components/ui/Button";
 import Badge from "../../components/ui/Badge";
+import { useFavorites } from "../../hooks/FavouritesContext";
+import { useEnquiries } from "../../hooks/EnquiriesContext";
 
 const AMENITIES = [
   "24/7 Security",
@@ -51,10 +53,12 @@ export default function PropertyDetailsPage() {
   const { propertyId } = useParams();
   const navigate = useNavigate();
 
-  const [isFavorite, setIsFavorite] = useState(false);
+  const { isFavorite, toggleFavorite } = useFavorites();
   const [enquirySubmitted, setEnquirySubmitted] = useState(false);
 
   const property = MOCK_PROPERTIES.find((item) => item.id === propertyId);
+
+  const { addEnquiry } = useEnquiries();
 
   if (!property) {
     return (
@@ -80,6 +84,22 @@ export default function PropertyDetailsPage() {
 
   const handleEnquirySubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+
+    addEnquiry({
+      propertyId: property.id,
+      propertyTitle: property.title,
+      propertyLocation: property.location,
+      city: property.city,
+      propertyImage: property.image,
+      rent: property.rent,
+      tenantName: String(formData.get("name") ?? "").trim(),
+      tenantEmail: String(formData.get("email") ?? "").trim(),
+      moveInDate: String(formData.get("moveInDate") ?? ""),
+      message: String(formData.get("message") ?? "").trim(),
+    });
+
     setEnquirySubmitted(true);
   };
 
@@ -125,16 +145,19 @@ export default function PropertyDetailsPage() {
 
           <button
             type="button"
-            onClick={() => setIsFavorite((current) => !current)}
-            aria-pressed={isFavorite}
+            onClick={() => toggleFavorite(property.id)}
+            aria-pressed={isFavorite(property.id)}
             className={`inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-semibold transition ${
-              isFavorite
+              isFavorite(property.id)
                 ? "border-brand bg-brand-light text-brand"
                 : "border-border bg-white text-ink hover:border-brand hover:text-brand"
             }`}
           >
-            <Heart size={17} fill={isFavorite ? "currentColor" : "none"} />
-            {isFavorite ? "Saved" : "Save property"}
+            <Heart
+              size={17}
+              fill={isFavorite(property.id) ? "currentColor" : "none"}
+            />
+            {isFavorite(property.id) ? "Saved" : "Save property"}
           </button>
         </motion.div>
 

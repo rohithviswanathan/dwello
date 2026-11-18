@@ -16,9 +16,13 @@ import PropertyDetailsPage from "./pages/public/PropertyDetailsPage";
 import LoginPage from "./pages/auth/LoginPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import RegisterPage from "./pages/auth/RegisterPage";
+import MyEnquiriesPage from "./pages/tenant/MyEnquiriesPage";
+import TenantDashboardPage from "./pages/tenant/TenantDashboardPage";
+import ProfilePage from "./pages/tenant/ProfilePage";
 
 import { FavoritesProvider } from "./hooks/FavouritesContext";
 import SavedPropertiesPage from "./pages/tenant/SavedPropertiesPage";
+import { EnquiriesProvider } from "./hooks/EnquiriesContext";
 
 function AppLayout() {
   const { pathname } = useLocation();
@@ -55,6 +59,10 @@ function AppLayout() {
           <Route path="/properties" element={<PropertiesPage />} />
           <Route path="/saved" element={<SavedPropertiesPage />} />
 
+          <Route path="/my-enquiries" element={<MyEnquiriesPage />} />
+          <Route path="/dashboard" element={<TenantDashboardPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+
           <Route
             path="/properties/:propertyId"
             element={<PropertyDetailsPage />}
@@ -77,7 +85,9 @@ function App() {
   return (
     <BrowserRouter>
       <FavoritesProvider>
-        <AppLayout />
+        <EnquiriesProvider>
+          <AppLayout />
+        </EnquiriesProvider>
       </FavoritesProvider>
     </BrowserRouter>
   );

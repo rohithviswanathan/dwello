@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
 import PropertyCard, { type PropertyCardData } from "./PropertyCard";
-import EmptyState from "../ui/Emptystate";
+import EmptyState from "../ui/EmptyState";
 import Skeleton from "../ui/Skeleton";
 import { SearchX } from "lucide-react";
 

@@ -10,6 +10,7 @@ import PropertyGrid from "../../components/property/PropertyGrid";
 import type { PropertyCardData } from "../../components/property/PropertyCard";
 import Pagination from "../../components/ui/Pagination";
 import Badge from "../../components/ui/Badge";
+import { useFavorites } from "../../hooks/FavouritesContext";
 
 const PAGE_SIZE = 6;
 
@@ -149,7 +150,8 @@ export default function PropertiesPage() {
 
   const [sortBy, setSortBy] = useState<SortOption>("recommended");
   const [currentPage, setCurrentPage] = useState(1);
-  const [favorites, setFavorites] = useState<string[]>([]);
+
+  const { favoriteIds, isFavorite, toggleFavorite } = useFavorites();
 
   const suggestions = useMemo(() => {
     const locations = Array.from(
@@ -255,14 +257,6 @@ export default function PropertiesPage() {
     setCurrentPage(1);
   };
 
-  const handleFavoriteToggle = (propertyId: string) => {
-    setFavorites((current) =>
-      current.includes(propertyId)
-        ? current.filter((id) => id !== propertyId)
-        : [...current, propertyId],
-    );
-  };
-
   const handleSearchChange = (value: string) => {
     setSearchValue(value);
     setCurrentPage(1);
@@ -365,11 +359,11 @@ export default function PropertiesPage() {
               </div>
             </div>
 
-            {favorites.length > 0 && (
+            {favoriteIds.length > 0 && (
               <div className="mb-4 flex items-center gap-2 text-sm text-muted">
                 <Heart size={15} className="text-brand" />
-                {favorites.length} saved{" "}
-                {favorites.length === 1 ? "property" : "properties"}
+                {favoriteIds.length} saved{" "}
+                {favoriteIds.length === 1 ? "property" : "properties"}
               </div>
             )}
 
@@ -379,9 +373,9 @@ export default function PropertiesPage() {
               loading={false}
               skeletonCount={PAGE_SIZE}
               emptyTitle="No properties found"
-              emptyDescription="Try changing your search or adjusting the filters."
-              onFavoriteToggle={handleFavoriteToggle}
-              isFavorite={(propertyId) => favorites.includes(propertyId)}
+              emptyDescription="Try changing your search or adjusting the filters to discover more properties."
+              onFavoriteToggle={toggleFavorite}
+              isFavorite={isFavorite}
             />
 
             {totalPages > 1 && (
