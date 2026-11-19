@@ -14,6 +14,7 @@ import {
   Search,
   Trash2,
   X,
+  Pencil,
 } from "lucide-react";
 
 import { useListings, type ListingStatus } from "../../hooks/ListingsContext";
@@ -393,6 +394,18 @@ function ManageListingsPage() {
                   {/* Listing actions */}
                   <div className="border-t border-border bg-surface-muted/40 p-3">
                     <div className="flex flex-wrap items-center gap-2">
+                      {/* Edit listing */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          navigate(`/landlord/listings/${property.id}/edit`)
+                        }
+                        className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-white px-3 py-2 text-xs font-bold text-ink-secondary transition-all hover:border-brand/40 hover:bg-brand-light hover:text-brand"
+                      >
+                        <Pencil size={14} />
+                        Edit
+                      </button>
+
                       {status === "draft" && (
                         <button
                           type="button"
