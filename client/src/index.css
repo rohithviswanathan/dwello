@@ -158,6 +158,10 @@ p {
   margin: 0;
 }
 
+.text {
+  color: var(--color-white);
+}
+
 .font-display {
   font-family: var(--font-display);
   font-weight: 500;
