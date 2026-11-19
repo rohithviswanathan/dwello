@@ -47,6 +47,7 @@ interface EnquiriesContextValue {
   enquiries: Enquiry[];
   addEnquiry: (data: CreateEnquiryData) => void;
   cancelEnquiry: (enquiryId: string) => void;
+  updateEnquiryStatus: (enquiryId: string, status: EnquiryStatus) => void;
   getEnquiryById: (enquiryId: string) => Enquiry | undefined;
 }
 
@@ -106,6 +107,21 @@ export function EnquiriesProvider({ children }: EnquiriesProviderProps) {
     );
   }, []);
 
+  const updateEnquiryStatus = useCallback(
+    (enquiryId: string, status: EnquiryStatus) => {
+      setEnquiries((current) =>
+        current.map((enquiry) =>
+          enquiry.id === enquiryId &&
+          enquiry.status !== "cancelled" &&
+          enquiry.status !== "closed"
+            ? { ...enquiry, status }
+            : enquiry,
+        ),
+      );
+    },
+    [],
+  );
+
   const getEnquiryById = useCallback(
     (enquiryId: string) =>
       enquiries.find((enquiry) => enquiry.id === enquiryId),
@@ -118,6 +134,7 @@ export function EnquiriesProvider({ children }: EnquiriesProviderProps) {
         enquiries,
         addEnquiry,
         cancelEnquiry,
+        updateEnquiryStatus,
         getEnquiryById,
       }}
     >
