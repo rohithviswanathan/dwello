@@ -84,13 +84,6 @@ function SearchBar({
         <MapPin size={20} strokeWidth={1.8} className="shrink-0 text-brand" />
 
         <div className="min-w-0 flex-1">
-          <label
-            htmlFor="dwello-location-search"
-            className="mb-0.5 block text-[10px] font-extrabold uppercase tracking-wider text-muted"
-          >
-            Location
-          </label>
-
           <input
             id="dwello-location-search"
             type="text"
