@@ -6,6 +6,7 @@ import {
   Routes,
   useLocation,
 } from "react-router-dom";
+import type { ReactNode } from "react";
 
 import { House } from "lucide-react";
 
@@ -26,12 +27,66 @@ import SavedPropertiesPage from "./pages/tenant/SavedPropertiesPage";
 
 import LandLordDashboardPage from "./pages/landlord/LandLordDashboardPage";
 import AddPropertyPage from "./pages/landlord/AddPropertyPage";
-
 import ManageListingsPage from "./pages/landlord/ManageListingsPage";
+import EditPropertyPage from "./pages/landlord/EditPropertyPage";
+import LandLordEnquiriesPage from "./pages/landlord/LandLordEnquiriesPage";
 
 import { FavoritesProvider } from "./hooks/FavouritesContext";
 import { EnquiriesProvider } from "./hooks/EnquiriesContext";
 import { ListingsProvider } from "./hooks/ListingsContext";
+import { AuthProvider, useAuth, type AuthRole } from "./hooks/AuthContext";
+
+function RequireRole({
+  role,
+  children,
+}: {
+  role: AuthRole;
+  children: ReactNode;
+}) {
+  const { user } = useAuth();
+  const location = useLocation();
+
+  if (!user) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  if (user.role !== role) {
+    return (
+      <Navigate
+        to={user.role === "landlord" ? "/landlord/dashboard" : "/dashboard"}
+        replace
+      />
+    );
+  }
+
+  return <>{children}</>;
+}
+
+function RequireAuthenticated({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  const location = useLocation();
+
+  if (!user) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  return <>{children}</>;
+}
+
+function GuestOnlyRoute({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+
+  if (user) {
+    return (
+      <Navigate
+        to={user.role === "landlord" ? "/landlord/dashboard" : "/dashboard"}
+        replace
+      />
+    );
+  }
+
+  return <>{children}</>;
+}
 
 function AppLayout() {
   const { pathname } = useLocation();
@@ -64,30 +119,120 @@ function AppLayout() {
 
       <div className="flex-1">
         <Routes>
+          {/* Public routes */}
           <Route path="/" element={<PropertiesPage />} />
           <Route path="/properties" element={<PropertiesPage />} />
-          <Route path="/saved" element={<SavedPropertiesPage />} />
-
-          <Route path="/my-enquiries" element={<MyEnquiriesPage />} />
-          <Route path="/dashboard" element={<TenantDashboardPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-
-          <Route
-            path="/landlord/dashboard"
-            element={<LandLordDashboardPage />}
-          />
-          <Route path="/landlord/listings" element={<ManageListingsPage />} />
-          <Route path="/landlord/listings/new" element={<AddPropertyPage />} />
-
           <Route
             path="/properties/:propertyId"
             element={<PropertyDetailsPage />}
           />
 
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+          {/* Tenant routes */}
+          <Route
+            path="/saved"
+            element={
+              <RequireRole role="tenant">
+                <SavedPropertiesPage />
+              </RequireRole>
+            }
+          />
 
+          <Route
+            path="/my-enquiries"
+            element={
+              <RequireRole role="tenant">
+                <MyEnquiriesPage />
+              </RequireRole>
+            }
+          />
+
+          <Route
+            path="/dashboard"
+            element={
+              <RequireRole role="tenant">
+                <TenantDashboardPage />
+              </RequireRole>
+            }
+          />
+
+          {/* Shared profile route — Tenant and Landlord */}
+          <Route
+            path="/profile"
+            element={
+              <RequireAuthenticated>
+                <ProfilePage />
+              </RequireAuthenticated>
+            }
+          />
+
+          {/* Landlord routes */}
+          <Route
+            path="/landlord/dashboard"
+            element={
+              <RequireRole role="landlord">
+                <LandLordDashboardPage />
+              </RequireRole>
+            }
+          />
+
+          <Route
+            path="/landlord/listings"
+            element={
+              <RequireRole role="landlord">
+                <ManageListingsPage />
+              </RequireRole>
+            }
+          />
+
+          <Route
+            path="/landlord/listings/new"
+            element={
+              <RequireRole role="landlord">
+                <AddPropertyPage />
+              </RequireRole>
+            }
+          />
+
+          <Route
+            path="/landlord/listings/:listingId/edit"
+            element={
+              <RequireRole role="landlord">
+                <EditPropertyPage />
+              </RequireRole>
+            }
+          />
+
+          <Route
+            path="/landlord/enquiries"
+            element={
+              <RequireRole role="landlord">
+                <LandLordEnquiriesPage />
+              </RequireRole>
+            }
+          />
+
+          {/* Guest routes */}
+          <Route
+            path="/login"
+            element={
+              <GuestOnlyRoute>
+                <LoginPage />
+              </GuestOnlyRoute>
+            }
+          />
+
+          <Route
+            path="/register"
+            element={
+              <GuestOnlyRoute>
+                <RegisterPage />
+              </GuestOnlyRoute>
+            }
+          />
+
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+
+          {/* Fallback */}
           <Route path="*" element={<Navigate to="/properties" replace />} />
         </Routes>
       </div>
@@ -100,13 +245,15 @@ function AppLayout() {
 function App() {
   return (
     <BrowserRouter>
-      <ListingsProvider>
-        <FavoritesProvider>
-          <EnquiriesProvider>
-            <AppLayout />
-          </EnquiriesProvider>
-        </FavoritesProvider>
-      </ListingsProvider>
+      <AuthProvider>
+        <ListingsProvider>
+          <FavoritesProvider>
+            <EnquiriesProvider>
+              <AppLayout />
+            </EnquiriesProvider>
+          </FavoritesProvider>
+        </ListingsProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }
