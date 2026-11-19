@@ -1,31 +1,65 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowUpRight, House, Menu, X } from "lucide-react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import {
+  ArrowUpRight,
+  House,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  UserRound,
+  X,
+} from "lucide-react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 
-const navigationLinks = [
-  {
-    label: "Home",
-    to: "/",
-    end: true,
-  },
-  {
-    label: "Find a home",
-    to: "/properties",
-  },
-  {
-    label: "My Enquiries",
-    to: "/my-enquiries",
-  },
-  {
-    label: "Dashboard",
-    to: "/dashboard",
-  },
-];
+import { useAuth } from "../../hooks/AuthContext";
 
 function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const { user, isAuthenticated, logout } = useAuth();
+
+  // Role-based logo destination
+  const logoDestination =
+    user?.role === "landlord" ? "/landlord/dashboard" : "/properties";
+
+  // Role-based navigation
+  const navigationLinks =
+    user?.role === "landlord"
+      ? [
+          {
+            label: "My Listings",
+            to: "/landlord/listings",
+          },
+          {
+            label: "Enquiries",
+            to: "/landlord/enquiries",
+          },
+          {
+            label: "Dashboard",
+            to: "/landlord/dashboard",
+          },
+        ]
+      : [
+          ...(user?.role === "tenant"
+            ? [
+                {
+                  label: "Saved Properties",
+                  to: "/saved",
+                },
+                {
+                  label: "My Enquiries",
+                  to: "/my-enquiries",
+                },
+                {
+                  label: "Dashboard",
+                  to: "/dashboard",
+                },
+              ]
+            : []),
+        ];
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -51,12 +85,21 @@ function Navbar() {
     setMobileMenuOpen(false);
   };
 
+  const handleLogout = () => {
+    logout();
+    closeMobileMenu();
+    navigate("/properties", { replace: true });
+  };
+
+  const dashboardPath =
+    user?.role === "landlord" ? "/landlord/dashboard" : "/dashboard";
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-white/95 backdrop-blur-xl">
       <div className="mx-auto flex h-[68px] max-w-[1280px] items-center justify-between px-5 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link
-          to="/"
+          to={logoDestination}
           onClick={closeMobileMenu}
           aria-label="Dwello home"
           className="group flex shrink-0 items-center gap-2"
@@ -73,13 +116,12 @@ function Navbar() {
         {/* Desktop navigation */}
         <nav
           aria-label="Main navigation"
-          className="hidden items-center gap-8 md:flex"
+          className="hidden items-center gap-6 lg:gap-8 md:flex"
         >
           {navigationLinks.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
-              end={"end" in item ? item.end : false}
               className={({ isActive }) => `
                 relative py-2 text-[13px] font-bold
                 transition-colors duration-200
@@ -113,35 +155,73 @@ function Navbar() {
 
         {/* Desktop actions */}
         <div className="hidden items-center gap-3 md:flex">
-          <Link
-            to="/login"
-            className="
-              rounded-lg px-3.5 py-2.5
-              text-[13px] font-extrabold text-ink
-              transition-colors duration-200
-              hover:bg-surface-muted hover:text-brand
-            "
-          >
-            Sign in
-          </Link>
+          {!isAuthenticated ? (
+            <>
+              <Link
+                to="/login"
+                className="
+                  rounded-lg px-3.5 py-2.5
+                  text-[13px] font-extrabold text-ink
+                  transition-colors duration-200
+                  hover:bg-surface-muted hover:text-brand
+                "
+              >
+                Sign in
+              </Link>
 
-          <Link
-            to="/register"
-            className="
-              group inline-flex items-center gap-2
-              rounded-lg bg-brand px-4 py-2.5
-              text-[13px] font-extrabold text-white
-              shadow-soft transition-all duration-200
-              hover:-translate-y-0.5 hover:bg-brand-dark hover:shadow-card
-              active:translate-y-0
-            "
-          >
-            List your property
-            <ArrowUpRight
-              size={15}
-              className="transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-            />
-          </Link>
+              <Link
+                to="/register"
+                className="
+                  group inline-flex items-center gap-2
+                  rounded-lg bg-brand px-4 py-2.5
+                  text-[13px] font-extrabold text-white
+                  shadow-soft transition-all duration-200
+                  hover:-translate-y-0.5 hover:bg-brand-dark hover:shadow-card
+                  active:translate-y-0
+                "
+              >
+                List your property
+                <ArrowUpRight
+                  size={15}
+                  className="transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                />
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/profile"
+                className="
+                  flex items-center gap-2 rounded-lg px-3 py-2
+                  transition-colors duration-200
+                  hover:bg-surface-muted
+                "
+              >
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-light text-brand">
+                  <UserRound size={16} />
+                </span>
+
+                <span className="max-w-[120px] truncate text-[13px] font-bold text-ink">
+                  {user?.name}
+                </span>
+              </Link>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="
+                  inline-flex items-center gap-2 rounded-lg
+                  border border-border px-3.5 py-2.5
+                  text-[13px] font-bold text-ink-secondary
+                  transition-colors duration-200
+                  hover:border-brand/30 hover:bg-brand-light hover:text-brand
+                "
+              >
+                <LogOut size={15} />
+                Sign out
+              </button>
+            </>
+          )}
         </div>
 
         {/* Mobile menu button */}
@@ -195,11 +275,11 @@ function Navbar() {
               aria-label="Mobile navigation"
               className="mx-auto flex max-w-[1280px] flex-col px-5 py-4 sm:px-6"
             >
+              {/* Role-based links */}
               {navigationLinks.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  end={"end" in item ? item.end : false}
                   onClick={closeMobileMenu}
                   className={({ isActive }) => `
                     rounded-lg px-3 py-3
@@ -217,32 +297,88 @@ function Navbar() {
 
               <div className="my-3 border-t border-border" />
 
-              <Link
-                to="/login"
-                onClick={closeMobileMenu}
-                className="
-                  rounded-lg px-3 py-3 text-sm font-bold
-                  text-ink-secondary transition-colors
-                  hover:bg-surface-muted hover:text-brand
-                "
-              >
-                Sign in
-              </Link>
+              {!isAuthenticated ? (
+                <>
+                  <Link
+                    to="/login"
+                    onClick={closeMobileMenu}
+                    className="
+                      rounded-lg px-3 py-3 text-sm font-bold
+                      text-ink-secondary transition-colors
+                      hover:bg-surface-muted hover:text-brand
+                    "
+                  >
+                    Sign in
+                  </Link>
 
-              <Link
-                to="/register"
-                onClick={closeMobileMenu}
-                className="
-                  mt-2 flex items-center justify-center gap-2
-                  rounded-lg bg-brand px-4 py-3
-                  text-sm font-extrabold text-white
-                  transition-colors duration-200
-                  hover:bg-brand-dark
-                "
-              >
-                List your property
-                <ArrowUpRight size={16} />
-              </Link>
+                  <Link
+                    to="/register"
+                    onClick={closeMobileMenu}
+                    className="
+                      mt-2 flex items-center justify-center gap-2
+                      rounded-lg bg-brand px-4 py-3
+                      text-sm font-extrabold text-white
+                      transition-colors duration-200
+                      hover:bg-brand-dark
+                    "
+                  >
+                    List your property
+                    <ArrowUpRight size={16} />
+                  </Link>
+                </>
+              ) : (
+                <>
+                  {/* Signed-in user */}
+                  <Link
+                    to="/profile"
+                    onClick={closeMobileMenu}
+                    className="
+                      flex items-center gap-3 rounded-lg px-3 py-3
+                      text-sm font-bold text-ink-secondary
+                      transition-colors hover:bg-surface-muted hover:text-brand
+                    "
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-light text-brand">
+                      <UserRound size={17} />
+                    </span>
+
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-ink">
+                        {user?.name}
+                      </span>
+                      <span className="mt-0.5 block text-xs font-medium capitalize text-muted">
+                        {user?.role} account
+                      </span>
+                    </span>
+                  </Link>
+
+                  <Link
+                    to={dashboardPath}
+                    onClick={closeMobileMenu}
+                    className="
+                      mt-1 flex items-center gap-2 rounded-lg px-3 py-3
+                      text-sm font-bold text-ink-secondary
+                      transition-colors hover:bg-surface-muted hover:text-brand
+                    "
+                  >
+                    <LayoutDashboard size={17} />
+                    My Dashboard
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="
+                      mt-2 flex w-full items-center gap-2 rounded-lg
+                      px-3 py-3 text-left text-sm font-bold text-danger
+                      transition-colors hover:bg-danger-light
+                    "
+                  >
+                    <LogOut size={17} />
+                    Sign out
+                  </button>
+                </>
+              )}
             </motion.nav>
           </motion.div>
         )}
