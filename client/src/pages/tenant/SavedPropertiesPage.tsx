@@ -5,16 +5,26 @@ import { Link } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import PropertyGrid from "../../components/property/PropertyGrid";
 import { useFavorites } from "../../hooks/FavouritesContext";
-import { MOCK_PROPERTIES } from "../public/PropertiesPage";
+import { useListings } from "../../hooks/ListingsContext";
 
 export default function SavedPropertiesPage() {
   const { favoriteIds, isFavorite, toggleFavorite, clearFavorites } =
     useFavorites();
 
+  const { listings } = useListings();
+
+  // Get saved properties from the shared listings context.
+  // Exclude deleted, draft and archived listings.
+  // Keep rented properties visible so tenants can see their updated status.
   const savedProperties = useMemo(
     () =>
-      MOCK_PROPERTIES.filter((property) => favoriteIds.includes(property.id)),
-    [favoriteIds],
+      listings.filter(
+        (property) =>
+          favoriteIds.includes(property.id) &&
+          property.status !== "draft" &&
+          property.status !== "archived",
+      ),
+    [listings, favoriteIds],
   );
 
   return (
@@ -68,6 +78,8 @@ export default function SavedPropertiesPage() {
             loading={false}
             isFavorite={isFavorite}
             onFavoriteToggle={toggleFavorite}
+            emptyTitle="No saved properties"
+            emptyDescription="Save properties using the heart icon to keep them here."
           />
         ) : (
           /* Empty State */

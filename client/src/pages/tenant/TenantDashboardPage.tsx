@@ -16,7 +16,7 @@ import Button from "../../components/ui/Button";
 import PropertyGrid from "../../components/property/PropertyGrid";
 import { useFavorites } from "../../hooks/FavouritesContext";
 import { useEnquiries, type EnquiryStatus } from "../../hooks/EnquiriesContext";
-import { MOCK_PROPERTIES } from "../public/PropertiesPage";
+import { useListings } from "../../hooks/ListingsContext";
 
 const STATUS_STYLES: Record<
   EnquiryStatus,
@@ -47,7 +47,13 @@ const STATUS_STYLES: Record<
 function formatDate(date: string) {
   if (!date) return "Date unavailable";
 
-  return new Date(date).toLocaleDateString("en-IN", {
+  const parsedDate = new Date(date);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "Date unavailable";
+  }
+
+  return parsedDate.toLocaleDateString("en-IN", {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -61,14 +67,25 @@ function formatRent(amount: number) {
 export default function TenantDashboardPage() {
   const { favoriteIds, isFavorite, toggleFavorite } = useFavorites();
   const { enquiries } = useEnquiries();
+  const { listings } = useListings();
 
-  const recentSavedProperties = useMemo(() => {
-    const recentIds = favoriteIds.slice(-3).reverse();
+  // Resolve saved properties from the shared listing context.
+  const savedProperties = useMemo(
+    () =>
+      listings.filter(
+        (property) =>
+          favoriteIds.includes(property.id) &&
+          property.status !== "draft" &&
+          property.status !== "archived",
+      ),
+    [listings, favoriteIds],
+  );
 
-    return recentIds
-      .map((id) => MOCK_PROPERTIES.find((property) => property.id === id))
-      .filter((property) => property !== undefined);
-  }, [favoriteIds]);
+  // Most recently saved properties first.
+  const recentSavedProperties = useMemo(
+    () => savedProperties.slice(-3).reverse(),
+    [savedProperties],
+  );
 
   const recentEnquiries = useMemo(
     () =>
@@ -82,9 +99,10 @@ export default function TenantDashboardPage() {
     [enquiries],
   );
 
-  const pendingCount = enquiries.filter(
-    (enquiry) => enquiry.status === "pending",
-  ).length;
+  const pendingCount = useMemo(
+    () => enquiries.filter((enquiry) => enquiry.status === "pending").length,
+    [enquiries],
+  );
 
   return (
     <main className="min-h-screen bg-canvas">
@@ -95,9 +113,11 @@ export default function TenantDashboardPage() {
             <p className="mb-1 text-sm font-semibold text-brand">
               TENANT OVERVIEW
             </p>
+
             <h1 className="font-display text-3xl font-semibold text-ink sm:text-4xl">
               Your dashboard
             </h1>
+
             <p className="mt-2 text-sm text-muted">
               Keep track of your saved homes and property enquiries.
             </p>
@@ -120,14 +140,17 @@ export default function TenantDashboardPage() {
               <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-light text-brand">
                 <Heart size={19} />
               </span>
+
               <ArrowRight
                 size={17}
                 className="text-subtle transition group-hover:translate-x-1 group-hover:text-brand"
               />
             </div>
+
             <p className="mt-4 text-sm text-muted">Saved properties</p>
+
             <p className="mt-1 text-2xl font-extrabold text-ink">
-              {favoriteIds.length}
+              {savedProperties.length}
             </p>
           </Link>
 
@@ -139,12 +162,15 @@ export default function TenantDashboardPage() {
               <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-info-light text-info">
                 <MessageSquare size={19} />
               </span>
+
               <ArrowRight
                 size={17}
                 className="text-subtle transition group-hover:translate-x-1 group-hover:text-brand"
               />
             </div>
+
             <p className="mt-4 text-sm text-muted">Total enquiries</p>
+
             <p className="mt-1 text-2xl font-extrabold text-ink">
               {enquiries.length}
             </p>
@@ -158,12 +184,15 @@ export default function TenantDashboardPage() {
               <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-warning-light text-warning">
                 <Clock3 size={19} />
               </span>
+
               <ArrowRight
                 size={17}
                 className="text-subtle transition group-hover:translate-x-1 group-hover:text-brand"
               />
             </div>
+
             <p className="mt-4 text-sm text-muted">Awaiting response</p>
+
             <p className="mt-1 text-2xl font-extrabold text-warning">
               {pendingCount}
             </p>
@@ -176,14 +205,16 @@ export default function TenantDashboardPage() {
             <div>
               <div className="flex items-center gap-2">
                 <Bookmark size={18} className="text-brand" />
+
                 <h2 className="text-lg font-bold text-ink">Recently saved</h2>
               </div>
+
               <p className="mt-1 text-sm text-muted">
                 Properties you've added to your collection.
               </p>
             </div>
 
-            {favoriteIds.length > 0 && (
+            {savedProperties.length > 0 && (
               <Link
                 to="/saved"
                 className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-brand transition hover:text-brand-dark"
@@ -206,12 +237,15 @@ export default function TenantDashboardPage() {
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-light text-brand">
                 <Heart size={21} />
               </span>
+
               <h3 className="mt-3 font-semibold text-ink">
                 No saved properties yet
               </h3>
+
               <p className="mt-1 text-sm text-muted">
                 Save properties you're interested in and they'll appear here.
               </p>
+
               <Link to="/properties" className="mt-4">
                 <Button size="sm" variant="outline">
                   Explore properties
@@ -227,8 +261,10 @@ export default function TenantDashboardPage() {
             <div>
               <div className="flex items-center gap-2">
                 <Send size={18} className="text-brand" />
+
                 <h2 className="text-lg font-bold text-ink">Recent enquiries</h2>
               </div>
+
               <p className="mt-1 text-sm text-muted">
                 A quick look at your latest property enquiries.
               </p>
@@ -276,9 +312,11 @@ export default function TenantDashboardPage() {
                         >
                           {enquiry.propertyTitle}
                         </Link>
+
                         <p className="mt-1 text-xs text-muted">
                           {formatRent(enquiry.rent)} / month
                         </p>
+
                         <p className="mt-1 flex items-center gap-1 text-xs text-muted">
                           <CalendarDays size={12} />
                           Submitted {formatDate(enquiry.submittedAt)}
@@ -309,12 +347,15 @@ export default function TenantDashboardPage() {
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-info-light text-info">
                 <MessageSquare size={21} />
               </span>
+
               <h3 className="mt-3 font-semibold text-ink">
                 No enquiries submitted
               </h3>
+
               <p className="mt-1 text-sm text-muted">
                 Your property enquiry activity will appear here.
               </p>
+
               <Link to="/properties" className="mt-4">
                 <Button size="sm" variant="outline">
                   Browse properties
@@ -334,9 +375,11 @@ export default function TenantDashboardPage() {
               className="flex items-center gap-3 rounded-lg border border-border p-3 transition hover:border-brand/40 hover:bg-brand-soft"
             >
               <Search size={19} className="text-brand" />
+
               <span className="text-sm font-semibold text-ink">
                 Find a home
               </span>
+
               <ArrowRight size={15} className="ml-auto text-muted" />
             </Link>
 
@@ -345,9 +388,11 @@ export default function TenantDashboardPage() {
               className="flex items-center gap-3 rounded-lg border border-border p-3 transition hover:border-brand/40 hover:bg-brand-soft"
             >
               <Heart size={19} className="text-brand" />
+
               <span className="text-sm font-semibold text-ink">
                 Saved properties
               </span>
+
               <ArrowRight size={15} className="ml-auto text-muted" />
             </Link>
 
@@ -356,9 +401,11 @@ export default function TenantDashboardPage() {
               className="flex items-center gap-3 rounded-lg border border-border p-3 transition hover:border-brand/40 hover:bg-brand-soft"
             >
               <MessageSquare size={19} className="text-brand" />
+
               <span className="text-sm font-semibold text-ink">
                 My enquiries
               </span>
+
               <ArrowRight size={15} className="ml-auto text-muted" />
             </Link>
           </div>

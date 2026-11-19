@@ -6,6 +6,7 @@ import {
   Routes,
   useLocation,
 } from "react-router-dom";
+
 import { House } from "lucide-react";
 
 import Navbar from "./components/layout/Navbar";
@@ -13,16 +14,24 @@ import Footer from "./components/layout/Footer";
 
 import PropertiesPage from "./pages/public/PropertiesPage";
 import PropertyDetailsPage from "./pages/public/PropertyDetailsPage";
+
 import LoginPage from "./pages/auth/LoginPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import RegisterPage from "./pages/auth/RegisterPage";
+
 import MyEnquiriesPage from "./pages/tenant/MyEnquiriesPage";
 import TenantDashboardPage from "./pages/tenant/TenantDashboardPage";
 import ProfilePage from "./pages/tenant/ProfilePage";
+import SavedPropertiesPage from "./pages/tenant/SavedPropertiesPage";
+
+import LandLordDashboardPage from "./pages/landlord/LandLordDashboardPage";
+import AddPropertyPage from "./pages/landlord/AddPropertyPage";
+
+import ManageListingsPage from "./pages/landlord/ManageListingsPage";
 
 import { FavoritesProvider } from "./hooks/FavouritesContext";
-import SavedPropertiesPage from "./pages/tenant/SavedPropertiesPage";
 import { EnquiriesProvider } from "./hooks/EnquiriesContext";
+import { ListingsProvider } from "./hooks/ListingsContext";
 
 function AppLayout() {
   const { pathname } = useLocation();
@@ -38,7 +47,7 @@ function AppLayout() {
           <Link
             to="/"
             aria-label="Dwello home"
-            className="group flex shrink-0 items-center gap-2 mx-auto"
+            className="group mx-auto flex shrink-0 items-center gap-2"
           >
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-white transition-transform duration-200 group-hover:scale-105">
               <House size={20} strokeWidth={2.4} />
@@ -64,6 +73,13 @@ function AppLayout() {
           <Route path="/profile" element={<ProfilePage />} />
 
           <Route
+            path="/landlord/dashboard"
+            element={<LandLordDashboardPage />}
+          />
+          <Route path="/landlord/listings" element={<ManageListingsPage />} />
+          <Route path="/landlord/listings/new" element={<AddPropertyPage />} />
+
+          <Route
             path="/properties/:propertyId"
             element={<PropertyDetailsPage />}
           />
@@ -84,11 +100,13 @@ function AppLayout() {
 function App() {
   return (
     <BrowserRouter>
-      <FavoritesProvider>
-        <EnquiriesProvider>
-          <AppLayout />
-        </EnquiriesProvider>
-      </FavoritesProvider>
+      <ListingsProvider>
+        <FavoritesProvider>
+          <EnquiriesProvider>
+            <AppLayout />
+          </EnquiriesProvider>
+        </FavoritesProvider>
+      </ListingsProvider>
     </BrowserRouter>
   );
 }

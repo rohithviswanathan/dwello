@@ -14,7 +14,7 @@ export interface PropertyCardData {
   propertyType: string;
   furnishing: string;
   image: string;
-  status?: "available" | "new" | "rented";
+  status?: "new" | "available" | "draft" | "rented" | "archived";
 }
 
 interface PropertyCardProps {
@@ -47,14 +47,25 @@ function PropertyCard({
       className: "bg-success-light text-success",
     },
     new: {
-      label: "New listing",
+      label: "New",
       className: "bg-brand-light text-brand",
     },
     rented: {
       label: "Rented",
+      className: "bg-warning-light text-warning",
+    },
+    draft: {
+      label: "Draft",
       className: "bg-surface-muted text-muted",
     },
-  };
+    archived: {
+      label: "Archived",
+      className: "bg-surface-muted text-muted",
+    },
+  } satisfies Record<
+    NonNullable<PropertyCardData["status"]>,
+    { label: string; className: string }
+  >;
 
   const status = property.status ? statusConfig[property.status] : null;
 

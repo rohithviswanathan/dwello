@@ -1,16 +1,30 @@
 import { useMemo, useState } from "react";
+
 import { motion } from "motion/react";
+
 import { ArrowDownUp, Heart, Home, SlidersHorizontal } from "lucide-react";
 
 import SearchBar from "../../components/property/SearchBar";
+
 import FilterPanel, {
   type PropertyFilters,
 } from "../../components/property/FilterPanel";
+
 import PropertyGrid from "../../components/property/PropertyGrid";
+
 import type { PropertyCardData } from "../../components/property/PropertyCard";
+
 import Pagination from "../../components/ui/Pagination";
+
 import Badge from "../../components/ui/Badge";
+
 import { useFavorites } from "../../hooks/FavouritesContext";
+
+import { INITIAL_LISTINGS, useListings } from "../../hooks/ListingsContext";
+
+// Temporary compatibility export for pages that haven't migrated yet.
+// These pages will be connected to ListingsContext in the next steps.
+export const MOCK_PROPERTIES: PropertyCardData[] = INITIAL_LISTINGS;
 
 const PAGE_SIZE = 6;
 
@@ -23,156 +37,57 @@ const DEFAULT_FILTERS: PropertyFilters = {
   furnishing: "",
 };
 
-// Temporary mock data. This will eventually come from the properties API.
-export const MOCK_PROPERTIES: PropertyCardData[] = [
-  {
-    id: "property-1",
-    title: "Modern Apartment with Spacious Balcony",
-    location: "Indiranagar",
-    city: "Bengaluru",
-    rent: 28000,
-    bedrooms: 2,
-    bathrooms: 2,
-    area: 1150,
-    propertyType: "Apartment",
-    furnishing: "Fully furnished",
-    image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=900",
-    status: "new",
-  },
-  {
-    id: "property-2",
-    title: "Premium Family Home in a Quiet Community",
-    location: "Whitefield",
-    city: "Bengaluru",
-    rent: 35000,
-    bedrooms: 3,
-    bathrooms: 2,
-    area: 1450,
-    propertyType: "Apartment",
-    furnishing: "Semi-furnished",
-    image: "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=900",
-    status: "available",
-  },
-  {
-    id: "property-3",
-    title: "Minimal Studio Apartment",
-    location: "Koramangala",
-    city: "Bengaluru",
-    rent: 16000,
-    bedrooms: 1,
-    bathrooms: 1,
-    area: 650,
-    propertyType: "Studio",
-    furnishing: "Fully furnished",
-    image: "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=900",
-    status: "available",
-  },
-  {
-    id: "property-4",
-    title: "Independent House with Private Garden",
-    location: "Sarjapur Road",
-    city: "Bengaluru",
-    rent: 42000,
-    bedrooms: 3,
-    bathrooms: 3,
-    area: 1850,
-    propertyType: "Independent House",
-    furnishing: "Unfurnished",
-    image: "https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=900",
-    status: "available",
-  },
-  {
-    id: "property-5",
-    title: "Bright Apartment Close to City Centre",
-    location: "HSR Layout",
-    city: "Bengaluru",
-    rent: 24000,
-    bedrooms: 2,
-    bathrooms: 2,
-    area: 1050,
-    propertyType: "Apartment",
-    furnishing: "Semi-furnished",
-    image: "https://images.unsplash.com/photo-1600607687644-c7171b42498f?w=900",
-    status: "new",
-  },
-  {
-    id: "property-6",
-    title: "Elegant Villa with Contemporary Interiors",
-    location: "Electronic City",
-    city: "Bengaluru",
-    rent: 55000,
-    bedrooms: 4,
-    bathrooms: 3,
-    area: 2200,
-    propertyType: "Villa",
-    furnishing: "Fully furnished",
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900",
-    status: "available",
-  },
-  {
-    id: "property-7",
-    title: "Comfortable Home for a Small Family",
-    location: "JP Nagar",
-    city: "Bengaluru",
-    rent: 22000,
-    bedrooms: 2,
-    bathrooms: 1,
-    area: 980,
-    propertyType: "Apartment",
-    furnishing: "Unfurnished",
-    image: "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=900",
-    status: "available",
-  },
-  {
-    id: "property-8",
-    title: "Spacious 3 BHK with Modern Kitchen",
-    location: "Marathahalli",
-    city: "Bengaluru",
-    rent: 32000,
-    bedrooms: 3,
-    bathrooms: 2,
-    area: 1550,
-    propertyType: "Apartment",
-    furnishing: "Fully furnished",
-    image: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=900",
-    status: "available",
-  },
-];
-
 type SortOption = "recommended" | "rent-low" | "rent-high" | "area";
 
 export default function PropertiesPage() {
   const [searchValue, setSearchValue] = useState("");
+
   const [draftFilters, setDraftFilters] =
     useState<PropertyFilters>(DEFAULT_FILTERS);
+
   const [appliedFilters, setAppliedFilters] =
     useState<PropertyFilters>(DEFAULT_FILTERS);
 
   const [sortBy, setSortBy] = useState<SortOption>("recommended");
+
   const [currentPage, setCurrentPage] = useState(1);
 
   const { favoriteIds, isFavorite, toggleFavorite } = useFavorites();
 
+  const { listings } = useListings();
+
+  // Only published and available listings should appear to tenants.
+  const publishedProperties = useMemo(
+    () =>
+      listings.filter(
+        (property) =>
+          property.status === "available" || property.status === "new",
+      ),
+    [listings],
+  );
+
+  // Location suggestions are now generated from shared listing data.
   const suggestions = useMemo(() => {
     const locations = Array.from(
-      new Set(MOCK_PROPERTIES.map((property) => property.location)),
+      new Set(publishedProperties.map((property) => property.location)),
     );
 
     return locations
       .filter((location) =>
-        location.toLowerCase().includes(searchValue.toLowerCase()),
+        location.toLowerCase().includes(searchValue.trim().toLowerCase()),
       )
       .slice(0, 5)
       .map((location) => ({
         label: location,
         description: "Bengaluru",
       }));
-  }, [searchValue]);
+  }, [publishedProperties, searchValue]);
 
+  // Search, filtering and sorting use the shared listings.
   const filteredProperties = useMemo(() => {
     const query = searchValue.trim().toLowerCase();
 
-    const filtered = MOCK_PROPERTIES.filter((property) => {
+    const filtered = publishedProperties.filter((property) => {
       const matchesSearch =
         !query ||
         property.title.toLowerCase().includes(query) ||
@@ -222,24 +137,31 @@ export default function PropertiesPage() {
       case "rent-low":
         filtered.sort((a, b) => a.rent - b.rent);
         break;
+
       case "rent-high":
         filtered.sort((a, b) => b.rent - a.rent);
         break;
+
       case "area":
         filtered.sort((a, b) => b.area - a.area);
         break;
+
       default:
         break;
     }
 
     return filtered;
-  }, [searchValue, appliedFilters, sortBy]);
+  }, [publishedProperties, searchValue, appliedFilters, sortBy]);
 
   const totalPages = Math.ceil(filteredProperties.length / PAGE_SIZE);
 
+  // Prevent an empty page if listings are removed while the user
+  // is viewing a later pagination page.
+  const safeCurrentPage = Math.min(currentPage, Math.max(totalPages, 1));
+
   const paginatedProperties = filteredProperties.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE,
+    (safeCurrentPage - 1) * PAGE_SIZE,
+    safeCurrentPage * PAGE_SIZE,
   );
 
   const handleSearch = () => {
@@ -327,6 +249,7 @@ export default function PropertiesPage() {
                 <h2 className="text-lg font-bold text-ink">
                   Available properties
                 </h2>
+
                 <p className="mt-1 text-sm text-muted">
                   {filteredProperties.length} properties found
                 </p>
@@ -381,7 +304,7 @@ export default function PropertiesPage() {
             {totalPages > 1 && (
               <div className="mt-7 flex justify-center">
                 <Pagination
-                  currentPage={currentPage}
+                  currentPage={safeCurrentPage}
                   totalPages={totalPages}
                   onPageChange={setCurrentPage}
                   totalItems={filteredProperties.length}

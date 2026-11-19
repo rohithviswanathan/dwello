@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -13,11 +13,11 @@ import {
 import { motion } from "motion/react";
 
 import PropertyGallery from "../../components/property/PropertyGallery";
-import { MOCK_PROPERTIES } from "./PropertiesPage";
 import Button from "../../components/ui/Button";
 import Badge from "../../components/ui/Badge";
 import { useFavorites } from "../../hooks/FavouritesContext";
 import { useEnquiries } from "../../hooks/EnquiriesContext";
+import { useListings } from "../../hooks/ListingsContext";
 
 const AMENITIES = [
   "24/7 Security",
@@ -31,59 +31,32 @@ const AMENITIES = [
 ];
 
 const GALLERY_IMAGES = [
-  {
-    src: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200",
-    alt: "Modern living room",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=1200",
-    alt: "Property interior",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=1200",
-    alt: "Contemporary home interior",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1600607687644-c7171b42498f?w=1200",
-    alt: "Property interior details",
-  },
+  "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=1200",
+  "https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=1200",
+  "https://images.unsplash.com/photo-1600607687644-c7171b42498f?w=1200",
 ];
 
 export default function PropertyDetailsPage() {
   const { propertyId } = useParams();
   const navigate = useNavigate();
 
+  const { getListingById } = useListings();
   const { isFavorite, toggleFavorite } = useFavorites();
-  const [enquirySubmitted, setEnquirySubmitted] = useState(false);
-
-  const property = MOCK_PROPERTIES.find((item) => item.id === propertyId);
-
   const { addEnquiry } = useEnquiries();
 
-  if (!property) {
-    return (
-      <main className="flex min-h-[65vh] items-center justify-center bg-canvas px-5">
-        <div className="max-w-md text-center">
-          <h1 className="font-display text-3xl font-semibold text-ink">
-            Property not found
-          </h1>
-          <p className="mt-3 text-sm text-muted">
-            This property may have been removed or the link may be incorrect.
-          </p>
-          <Button
-            variant="primary"
-            className="mt-6"
-            onClick={() => navigate("/properties")}
-          >
-            Browse properties
-          </Button>
-        </div>
-      </main>
-    );
-  }
+  const [enquirySubmitted, setEnquirySubmitted] = useState(false);
 
-  const handleEnquirySubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  // Read the latest listing directly from shared context.
+  const property = getListingById(propertyId ?? "");
+
+  const formatRent = (amount: number) => `₹${amount.toLocaleString("en-IN")}`;
+
+  const handleEnquirySubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (!property || !["available", "new"].includes(property.status)) {
+      return;
+    }
 
     const formData = new FormData(event.currentTarget);
 
@@ -103,7 +76,71 @@ export default function PropertyDetailsPage() {
     setEnquirySubmitted(true);
   };
 
-  const formatRent = (amount: number) => `₹${amount.toLocaleString("en-IN")}`;
+  // Missing, draft and archived listings should not be visible to tenants.
+  if (
+    !property ||
+    property.status === "draft" ||
+    property.status === "archived"
+  ) {
+    return (
+      <main className="flex min-h-[65vh] items-center justify-center bg-canvas px-5">
+        <div className="max-w-md text-center">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-light text-brand">
+            <MapPin size={28} />
+          </div>
+
+          <h1 className="font-display text-3xl font-semibold text-ink">
+            Property not found
+          </h1>
+
+          <p className="mt-3 text-sm leading-6 text-muted">
+            This property may have been removed, unpublished, or the link may be
+            incorrect.
+          </p>
+
+          <Button
+            variant="primary"
+            className="mt-6"
+            onClick={() => navigate("/properties")}
+          >
+            Browse properties
+          </Button>
+        </div>
+      </main>
+    );
+  }
+
+  // Rented properties remain identifiable but cannot receive new enquiries.
+  if (property.status === "rented") {
+    return (
+      <main className="flex min-h-[65vh] items-center justify-center bg-canvas px-5">
+        <div className="max-w-md text-center">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-warning-light text-warning">
+            <HomeIcon />
+          </div>
+
+          <Badge variant="warning">Currently rented</Badge>
+
+          <h1 className="mt-4 font-display text-3xl font-semibold text-ink">
+            This property is no longer available
+          </h1>
+
+          <p className="mt-3 text-sm leading-6 text-muted">
+            "{property.title}" has already been rented. You can explore other
+            available properties on Dwello.
+          </p>
+
+          <Button
+            variant="primary"
+            className="mt-6"
+            onClick={() => navigate("/properties")}
+          >
+            Browse available properties
+          </Button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-canvas">
@@ -128,6 +165,7 @@ export default function PropertyDetailsPage() {
           <div>
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <Badge variant="success">Available for rent</Badge>
+
               {property.status === "new" && (
                 <Badge variant="brand">New listing</Badge>
               )}
@@ -147,6 +185,11 @@ export default function PropertyDetailsPage() {
             type="button"
             onClick={() => toggleFavorite(property.id)}
             aria-pressed={isFavorite(property.id)}
+            aria-label={
+              isFavorite(property.id)
+                ? "Remove property from saved properties"
+                : "Save property"
+            }
             className={`inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-semibold transition ${
               isFavorite(property.id)
                 ? "border-brand bg-brand-light text-brand"
@@ -164,11 +207,9 @@ export default function PropertyDetailsPage() {
         {/* Image gallery */}
         <PropertyGallery
           title={property.title}
-          images={[
-            property.image,
-            ...GALLERY_IMAGES.slice(1).map((image) => image.src),
-          ]}
+          images={[property.image, ...GALLERY_IMAGES]}
         />
+
         {/* Main content */}
         <div className="mt-7 grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_340px]">
           {/* Property information */}
@@ -230,10 +271,9 @@ export default function PropertyDetailsPage() {
                 Discover this {property.bedrooms} bedroom{" "}
                 {property.propertyType.toLowerCase()} in {property.location},{" "}
                 {property.city}. This home offers approximately {property.area}{" "}
-                sq. ft. of living space and
-                {` ${property.furnishing.toLowerCase()} `}interiors. It is a
-                great option for tenants looking for a comfortable home in a
-                convenient neighbourhood.
+                sq. ft. of living space and {property.furnishing.toLowerCase()}{" "}
+                interiors. It is a great option for tenants looking for a
+                comfortable home in a convenient neighbourhood.
               </p>
             </section>
 
@@ -317,10 +357,12 @@ export default function PropertyDetailsPage() {
               {enquirySubmitted ? (
                 <div className="mt-4 rounded-lg border border-success/20 bg-success-light p-4">
                   <p className="font-bold text-success">Enquiry submitted!</p>
+
                   <p className="mt-1 text-sm text-ink-secondary">
                     This is a frontend demo. Your enquiry isn't being sent to a
                     landlord yet.
                   </p>
+
                   <button
                     type="button"
                     onClick={() => setEnquirySubmitted(false)}
@@ -338,6 +380,7 @@ export default function PropertyDetailsPage() {
                     >
                       Your name
                     </label>
+
                     <input
                       id="enquiry-name"
                       name="name"
@@ -355,6 +398,7 @@ export default function PropertyDetailsPage() {
                     >
                       Email address
                     </label>
+
                     <input
                       id="enquiry-email"
                       name="email"
@@ -372,10 +416,12 @@ export default function PropertyDetailsPage() {
                     >
                       Preferred move-in date
                     </label>
+
                     <input
                       id="enquiry-date"
                       name="moveInDate"
                       type="date"
+                      min={new Date().toISOString().split("T")[0]}
                       required
                       className="w-full rounded-lg border border-border bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
                     />
@@ -388,6 +434,7 @@ export default function PropertyDetailsPage() {
                     >
                       Message
                     </label>
+
                     <textarea
                       id="enquiry-message"
                       name="message"
@@ -413,4 +460,8 @@ export default function PropertyDetailsPage() {
       </div>
     </main>
   );
+}
+
+function HomeIcon() {
+  return <MapPin size={28} />;
 }
