@@ -49,7 +49,7 @@ function FilterPanel({
     selected: string,
     onSelect: (value: string) => void,
   ) => (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2 mt-2">
       {options.map((option) => {
         const active = selected === option;
 
@@ -122,9 +122,9 @@ function FilterPanel({
       <div className="space-y-5 p-4">
         {/* Rent range */}
         <section>
-          <h4 className="mb-3 text-xs font-extrabold text-ink">Monthly rent</h4>
+          <h4 className="mb-3 text-sm font-extrabold text-ink">Monthly rent</h4>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 mt-1">
             <label className="block">
               <span className="mb-1.5 block text-[11px] font-semibold text-muted">
                 Minimum (₹)
@@ -177,7 +177,7 @@ function FilterPanel({
 
         {/* Property type */}
         <section>
-          <h4 className="mb-3 text-xs font-extrabold text-ink">
+          <h4 className="mb-3 text-sm font-extrabold text-ink">
             Property type
           </h4>
 
@@ -190,7 +190,7 @@ function FilterPanel({
 
         {/* Bedrooms */}
         <section>
-          <h4 className="mb-3 text-xs font-extrabold text-ink">Bedrooms</h4>
+          <h4 className="mb-3 text-sm font-extrabold text-ink">Bedrooms</h4>
 
           {renderOptions(bedroomOptions, filters.bedrooms, (value) =>
             updateFilter("bedrooms", value),
@@ -201,7 +201,7 @@ function FilterPanel({
 
         {/* Bathrooms */}
         <section>
-          <h4 className="mb-3 text-xs font-extrabold text-ink">Bathrooms</h4>
+          <h4 className="mb-3 text-sm font-extrabold text-ink">Bathrooms</h4>
 
           {renderOptions(bathroomOptions, filters.bathrooms, (value) =>
             updateFilter("bathrooms", value),
@@ -212,7 +212,7 @@ function FilterPanel({
 
         {/* Furnishing */}
         <section>
-          <h4 className="mb-3 text-xs font-extrabold text-ink">Furnishing</h4>
+          <h4 className="mb-3 text-sm font-extrabold text-ink">Furnishing</h4>
 
           {renderOptions(furnishingOptions, filters.furnishing, (value) =>
             updateFilter("furnishing", value),
