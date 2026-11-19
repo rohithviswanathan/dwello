@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, type FormEvent } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Building2,
   CheckCircle2,
@@ -12,11 +12,13 @@ import {
 import Input from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
 import Alert from "../../components/ui/Alert";
-
-type AccountRole = "tenant" | "landlord";
+import { useAuth, type AuthRole } from "../../hooks/AuthContext";
 
 export default function RegisterPage() {
-  const [role, setRole] = useState<AccountRole>("tenant");
+  const navigate = useNavigate();
+  const { register } = useAuth();
+
+  const [role, setRole] = useState<AuthRole>("tenant");
 
   const [formData, setFormData] = useState({
     name: "",
@@ -27,7 +29,7 @@ export default function RegisterPage() {
 
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const updateField = (field: keyof typeof formData, value: string) => {
     setFormData((current) => ({
@@ -36,11 +38,17 @@ export default function RegisterPage() {
     }));
 
     setError("");
-    setSubmitted(false);
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (isSubmitting) return;
+
+    if (!formData.name.trim()) {
+      setError("Please enter your full name.");
+      return;
+    }
 
     if (formData.password.length < 8) {
       setError("Password must contain at least 8 characters.");
@@ -58,9 +66,29 @@ export default function RegisterPage() {
     }
 
     setError("");
-    setSubmitted(true);
+    setIsSubmitting(true);
 
-    // Account creation will be connected to the backend later.
+    try {
+      const user = register({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        role,
+      });
+
+      const destination =
+        user.role === "landlord" ? "/landlord/dashboard" : "/dashboard";
+
+      navigate(destination, { replace: true });
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to create your account. Please try again.",
+      );
+
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -83,10 +111,13 @@ export default function RegisterPage() {
             I want to join Dwello as a
           </h2>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 mt-2">
+          <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <button
               type="button"
-              onClick={() => setRole("tenant")}
+              onClick={() => {
+                setRole("tenant");
+                setError("");
+              }}
               aria-pressed={role === "tenant"}
               className={`relative flex items-center gap-3 rounded-xl border p-4 text-left transition ${
                 role === "tenant"
@@ -118,7 +149,10 @@ export default function RegisterPage() {
 
             <button
               type="button"
-              onClick={() => setRole("landlord")}
+              onClick={() => {
+                setRole("landlord");
+                setError("");
+              }}
               aria-pressed={role === "landlord"}
               className={`relative flex items-center gap-3 rounded-xl border p-4 text-left transition ${
                 role === "landlord"
@@ -152,20 +186,11 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        {/* Feedback */}
+        {/* Error feedback */}
         {error && (
           <div className="mb-5">
-            <Alert variant="error" title="Unable to continue">
+            <Alert variant="error" title="Unable to create account">
               {error}
-            </Alert>
-          </div>
-        )}
-
-        {submitted && (
-          <div className="mb-5">
-            <Alert variant="success" title="Registration form completed">
-              Your {role} registration details are ready. Actual account
-              creation will be enabled when the backend is connected.
             </Alert>
           </div>
         )}
@@ -246,7 +271,14 @@ export default function RegisterPage() {
             </span>
           </label>
 
-          <Button type="submit" variant="primary" size="lg" className="w-full">
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            className="w-full"
+            loading={isSubmitting}
+            disabled={isSubmitting}
+          >
             Create {role === "tenant" ? "tenant" : "landlord"} account
           </Button>
         </form>
