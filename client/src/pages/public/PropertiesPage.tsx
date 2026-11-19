@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 
 import { motion } from "motion/react";
 
-import { ArrowDownUp, Heart, Home, SlidersHorizontal } from "lucide-react";
+import { ArrowDownUp, Heart, SlidersHorizontal } from "lucide-react";
 
 import SearchBar from "../../components/property/SearchBar";
 
@@ -186,7 +186,7 @@ export default function PropertiesPage() {
 
   return (
     <main className="min-h-screen bg-canvas">
-      <div className="mx-auto max-w-[1280px] px-4 py-7 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1300px] px-4 py-7 sm:px-6 lg:px-8">
         {/* Page heading */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -203,14 +203,9 @@ export default function PropertiesPage() {
               Explore rental properties
             </h1>
 
-            <p className="mt-2 text-sm text-muted sm:text-base">
+            <p className="mt-2 pt-1 text-sm text-muted sm:text-base">
               Discover places that feel like home.
             </p>
-          </div>
-
-          <div className="flex items-center gap-2 text-sm text-muted">
-            <Home size={17} />
-            <span>Properties across Bengaluru</span>
           </div>
         </motion.div>
 
@@ -226,7 +221,7 @@ export default function PropertiesPage() {
         </div>
 
         {/* Main content */}
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
           {/* Filters */}
           <aside className="min-w-0">
             <div className="mb-3 flex items-center gap-2 text-sm font-bold text-ink">
