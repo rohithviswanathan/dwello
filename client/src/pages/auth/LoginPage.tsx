@@ -1,21 +1,59 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, type FormEvent } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 
 import Input from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
 import Alert from "../../components/ui/Alert";
+import { useAuth } from "../../hooks/AuthContext";
+
+interface LoginLocationState {
+  from?: {
+    pathname?: string;
+  };
+}
 
 export default function LoginPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const { login } = useAuth();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState(false);
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    // Authentication will be connected when the backend is implemented.
-    setMessage(true);
+    if (isSubmitting) return;
+
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      const authenticatedUser = login(email, password);
+
+      const locationState = location.state as LoginLocationState | null;
+
+      const requestedPath = locationState?.from?.pathname;
+
+      const defaultPath =
+        authenticatedUser.role === "landlord"
+          ? "/landlord/dashboard"
+          : "/dashboard";
+
+      navigate(requestedPath || defaultPath, { replace: true });
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to sign in. Please try again.",
+      );
+
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -31,21 +69,22 @@ export default function LoginPage() {
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand text-lg font-extrabold">
                 D
               </span>
+
               <span className="text-2xl font-extrabold tracking-tight">
                 Dwello
               </span>
             </Link>
 
-            <div className="mt-20 max-w-sm">
+            <div className="mt-10 max-w-sm">
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-red-300">
                 Welcome back
               </p>
 
-              <h1 className="mt-4 font-display text-4xl font-semibold leading-tight">
+              <h1 className="text mt-4 pt-5 font-display text-4xl font-semibold leading-tight">
                 Your next chapter starts at home.
               </h1>
 
-              <p className="mt-5 text-sm leading-7 text-white/65">
+              <p className="mt-5 pt-5 text-sm leading-7 text-white/65">
                 Sign in to discover homes, manage your saved properties, and
                 keep track of your rental enquiries.
               </p>
@@ -66,6 +105,7 @@ export default function LoginPage() {
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand text-lg font-extrabold text-white">
                   D
                 </span>
+
                 <span className="text-xl font-extrabold text-ink">Dwello</span>
               </Link>
             </div>
@@ -74,16 +114,16 @@ export default function LoginPage() {
               <h2 className="font-display text-3xl font-semibold text-ink">
                 Sign in to Dwello
               </h2>
-              <p className="mt-2 text-sm leading-6 text-muted">
+
+              <p className="mt-2 pt-2 text-sm leading-6 text-muted">
                 Enter your account details to continue.
               </p>
             </div>
 
-            {message && (
+            {error && (
               <div className="mt-6">
-                <Alert variant="info" title="Authentication not connected yet">
-                  Your login form is ready. Account verification will be enabled
-                  when we connect the backend.
+                <Alert variant="error" title="Sign in failed">
+                  {error}
                 </Alert>
               </div>
             )}
@@ -97,7 +137,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(event) => {
                   setEmail(event.target.value);
-                  setMessage(false);
+                  setError("");
                 }}
                 required
               />
@@ -111,7 +151,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(event) => {
                     setPassword(event.target.value);
-                    setMessage(false);
+                    setError("");
                   }}
                   required
                 />
@@ -131,6 +171,8 @@ export default function LoginPage() {
                 variant="primary"
                 size="lg"
                 className="w-full"
+                loading={isSubmitting}
+                disabled={isSubmitting}
               >
                 Sign in
               </Button>
@@ -152,7 +194,7 @@ export default function LoginPage() {
               </Link>
             </p>
 
-            <p className="mt-8 text-center text-xs leading-5 text-muted">
+            <p className="pt-1 text-center text-xs leading-5 text-muted">
               By continuing, you agree to Dwello's Terms of Service and Privacy
               Policy.
             </p>
