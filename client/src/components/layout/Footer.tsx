@@ -6,14 +6,12 @@ const footerGroups = [
     title: "Explore",
     links: [
       { label: "Find a home", to: "/properties" },
-      { label: "How it works", to: "/how-it-works" },
       { label: "Saved properties", to: "/saved" },
     ],
   },
   {
     title: "For landlords",
     links: [
-      { label: "List your property", to: "/register" },
       { label: "Manage listings", to: "/landlord/listings" },
       { label: "Manage enquiries", to: "/landlord/enquiries" },
     ],
@@ -21,7 +19,6 @@ const footerGroups = [
   {
     title: "Account",
     links: [
-      { label: "Sign in", to: "/login" },
       { label: "Create account", to: "/register" },
       { label: "My dashboard", to: "/dashboard" },
     ],
@@ -39,7 +36,7 @@ function Footer() {
             <Link
               to="/"
               aria-label="Dwello home"
-              className="group inline-flex items-center gap-2"
+              className="group inline-flex items-center gap-2 mb-2"
             >
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-white transition-transform duration-200 group-hover:scale-105">
                 <House size={20} strokeWidth={2.4} />
@@ -104,7 +101,7 @@ function Footer() {
 
           {/* Navigation groups */}
           {footerGroups.map((group) => (
-            <div key={group.title}>
+            <div key={group.title} className="mt-7">
               <h3 className="mb-4 text-sm font-extrabold tracking-wide text-white">
                 {group.title}
               </h3>
