@@ -9,6 +9,9 @@ import {
   MapPin,
   Maximize,
   ShieldCheck,
+  Home,
+  UserRound,
+  LockKeyhole,
 } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -18,6 +21,7 @@ import Badge from "../../components/ui/Badge";
 import { useFavorites } from "../../hooks/FavouritesContext";
 import { useEnquiries } from "../../hooks/EnquiriesContext";
 import { useListings } from "../../hooks/ListingsContext";
+import { useAuth } from "../../hooks/AuthContext";
 
 const AMENITIES = [
   "24/7 Security",
@@ -43,16 +47,37 @@ export default function PropertyDetailsPage() {
   const { getListingById } = useListings();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { addEnquiry } = useEnquiries();
+  const { user } = useAuth();
 
   const [enquirySubmitted, setEnquirySubmitted] = useState(false);
 
-  // Read the latest listing directly from shared context.
   const property = getListingById(propertyId ?? "");
+
+  const isTenant = user?.role === "tenant";
+  const isLandlord = user?.role === "landlord";
+  const isGuest = !user;
+
+  const propertyPath = `/properties/${propertyId}`;
 
   const formatRent = (amount: number) => `₹${amount.toLocaleString("en-IN")}`;
 
+  const handleAuthenticationRedirect = (path: "/login" | "/register") => {
+    navigate(path, {
+      state: {
+        from: propertyPath,
+        message:
+          "Please sign in or create a tenant account to enquire about this property.",
+      },
+    });
+  };
+
   const handleEnquirySubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    // Prevent guests and landlords from submitting tenant enquiries.
+    if (!isTenant) {
+      return;
+    }
 
     if (!property || !["available", "new"].includes(property.status)) {
       return;
@@ -67,8 +92,8 @@ export default function PropertyDetailsPage() {
       city: property.city,
       propertyImage: property.image,
       rent: property.rent,
-      tenantName: String(formData.get("name") ?? "").trim(),
-      tenantEmail: String(formData.get("email") ?? "").trim(),
+      tenantName: user.name,
+      tenantEmail: user.email,
       moveInDate: String(formData.get("moveInDate") ?? ""),
       message: String(formData.get("message") ?? "").trim(),
     });
@@ -116,7 +141,7 @@ export default function PropertyDetailsPage() {
       <main className="flex min-h-[65vh] items-center justify-center bg-canvas px-5">
         <div className="max-w-md text-center">
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-warning-light text-warning">
-            <HomeIcon />
+            <Home size={28} />
           </div>
 
           <Badge variant="warning">Currently rented</Badge>
@@ -171,7 +196,7 @@ export default function PropertyDetailsPage() {
               )}
             </div>
 
-            <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
+            <h1 className="pb-1 text-2xl font-semibold text-ink sm:text-3xl">
               {property.title}
             </h1>
 
@@ -216,9 +241,11 @@ export default function PropertyDetailsPage() {
           <div className="min-w-0 space-y-6">
             {/* Key details */}
             <section className="rounded-xl border border-border bg-white p-5 shadow-soft">
-              <h2 className="text-lg font-bold text-ink">Property overview</h2>
+              <h2 className="text-lg font-bold text-ink pb-1">
+                Property overview
+              </h2>
 
-              <div className="mt-5 grid grid-cols-2 gap-5 sm:grid-cols-4">
+              <div className="mt-3 grid grid-cols-2 gap-5 sm:grid-cols-4">
                 <div className="flex items-center gap-3">
                   <BedDouble className="shrink-0 text-brand" size={21} />
                   <div>
@@ -263,11 +290,11 @@ export default function PropertyDetailsPage() {
 
             {/* Description */}
             <section className="rounded-xl border border-border bg-white p-5 shadow-soft">
-              <h2 className="text-lg font-bold text-ink">
+              <h2 className="text-lg font-bold text-ink pb-1">
                 About this property
               </h2>
 
-              <p className="mt-3 text-sm leading-7 text-ink-secondary">
+              <p className="mt-6 text-sm leading-7 text-ink-secondary">
                 Discover this {property.bedrooms} bedroom{" "}
                 {property.propertyType.toLowerCase()} in {property.location},{" "}
                 {property.city}. This home offers approximately {property.area}{" "}
@@ -314,7 +341,7 @@ export default function PropertyDetailsPage() {
           {/* Rental information and enquiry */}
           <aside className="lg:sticky lg:top-24">
             <div className="rounded-xl border border-border bg-white p-5 shadow-card">
-              <p className="text-sm text-muted">Monthly rent</p>
+              <p className="text-sm text-muted pb-1">Monthly rent</p>
 
               <p className="mt-1 text-3xl font-extrabold text-ink">
                 {formatRent(property.rent)}
@@ -346,14 +373,19 @@ export default function PropertyDetailsPage() {
 
               <div className="my-5 border-t border-border" />
 
-              <h2 className="text-base font-bold text-ink">
+              <h2 className="text-base font-bold text-ink pb-1">
                 Interested in this property?
               </h2>
 
               <p className="mt-1 text-sm leading-6 text-muted">
-                Send an enquiry to let the landlord know you're interested.
+                {isTenant
+                  ? "Send an enquiry to let the landlord know you're interested."
+                  : isGuest
+                    ? "Create an account or sign in as a tenant to enquire about this property."
+                    : "Landlord accounts cannot submit tenant enquiries."}
               </p>
 
+              {/* Successful enquiry */}
               {enquirySubmitted ? (
                 <div className="mt-4 rounded-lg border border-success/20 bg-success-light p-4">
                   <p className="font-bold text-success">Enquiry submitted!</p>
@@ -371,7 +403,8 @@ export default function PropertyDetailsPage() {
                     Send another enquiry
                   </button>
                 </div>
-              ) : (
+              ) : isTenant ? (
+                /* Tenant enquiry form */
                 <form onSubmit={handleEnquirySubmit} className="mt-4 space-y-3">
                   <div>
                     <label
@@ -385,9 +418,9 @@ export default function PropertyDetailsPage() {
                       id="enquiry-name"
                       name="name"
                       type="text"
-                      placeholder="Enter your name"
-                      required
-                      className="w-full rounded-lg border border-border bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
+                      value={user.name}
+                      readOnly
+                      className="w-full cursor-not-allowed rounded-lg border border-border bg-surface-muted px-3 py-2.5 text-sm text-muted outline-none"
                     />
                   </div>
 
@@ -403,9 +436,9 @@ export default function PropertyDetailsPage() {
                       id="enquiry-email"
                       name="email"
                       type="email"
-                      placeholder="you@example.com"
-                      required
-                      className="w-full rounded-lg border border-border bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
+                      value={user.email}
+                      readOnly
+                      className="w-full cursor-not-allowed rounded-lg border border-border bg-surface-muted px-3 py-2.5 text-sm text-muted outline-none"
                     />
                   </div>
 
@@ -449,9 +482,66 @@ export default function PropertyDetailsPage() {
                     Send enquiry
                   </Button>
                 </form>
-              )}
+              ) : isGuest ? (
+                /* Guest registration prompt */
+                <div className="mt-4 rounded-xl border border-brand/15 bg-brand-soft p-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-light text-brand">
+                    <LockKeyhole size={19} />
+                  </div>
 
-              <p className="mt-3 text-center text-xs text-muted">
+                  <h3 className="pl-0.5 mt-3 pt-3 text-base font-bold text-ink">
+                    Sign in to enquire
+                  </h3>
+
+                  <p className="pl-0.5 mt-1 pt-1 text-xs leading-5 text-muted">
+                    Join Dwello to contact landlords, track your enquiries, and
+                    manage your rental interests.
+                  </p>
+
+                  <Button
+                    variant="primary"
+                    className="mt-4 w-full"
+                    onClick={() => handleAuthenticationRedirect("/register")}
+                  >
+                    Create tenant account
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    className="mt-3 w-full"
+                    onClick={() => handleAuthenticationRedirect("/login")}
+                  >
+                    Already have an account? Sign in
+                  </Button>
+                </div>
+              ) : isLandlord ? (
+                /* Landlord restriction */
+                <div className="mt-4 rounded-xl border border-border bg-surface-muted p-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-muted">
+                    <UserRound size={19} />
+                  </div>
+
+                  <p className="mt-3 text-sm font-bold text-ink">
+                    Tenant access only
+                  </p>
+
+                  <p className="mt-1 text-xs leading-5 text-muted">
+                    Enquiries are available to tenant accounts. You can manage
+                    your own property listings and incoming enquiries from your
+                    landlord dashboard.
+                  </p>
+
+                  <Button
+                    variant="outline"
+                    className="mt-4 w-full"
+                    onClick={() => navigate("/landlord/dashboard")}
+                  >
+                    Go to landlord dashboard
+                  </Button>
+                </div>
+              ) : null}
+
+              <p className="mt-3 pt-3 text-center text-xs text-muted">
                 No payment required to send an enquiry.
               </p>
             </div>
@@ -460,8 +550,4 @@ export default function PropertyDetailsPage() {
       </div>
     </main>
   );
-}
-
-function HomeIcon() {
-  return <MapPin size={28} />;
 }
