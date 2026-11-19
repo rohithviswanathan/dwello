@@ -24,8 +24,11 @@ import Card from "../../components/ui/Card";
 import Badge from "../../components/ui/Badge";
 import Alert from "../../components/ui/Alert";
 import Avatar from "../../components/ui/Avatar";
+
 import { useFavorites } from "../../hooks/FavouritesContext";
 import { useEnquiries } from "../../hooks/EnquiriesContext";
+import { useAuth } from "../../hooks/AuthContext";
+import { useListings } from "../../hooks/ListingsContext";
 
 interface TenantProfile {
   name: string;
@@ -34,64 +37,102 @@ interface TenantProfile {
   location: string;
 }
 
-const PROFILE_STORAGE_KEY = "dwello-tenant-profile";
-const PREFERENCES_STORAGE_KEY = "dwello-tenant-preferences";
+interface NotificationPreferences {
+  emailNotifications: boolean;
+  enquiryUpdates: boolean;
+}
 
 const DEFAULT_PROFILE: TenantProfile = {
-  name: "Dwello Tenant",
-  email: "tenant@example.com",
+  name: "",
+  email: "",
   phone: "",
   location: "",
 };
 
-function getStoredProfile(): TenantProfile {
-  try {
-    const stored = localStorage.getItem(PROFILE_STORAGE_KEY);
+const DEFAULT_PREFERENCES: NotificationPreferences = {
+  emailNotifications: true,
+  enquiryUpdates: true,
+};
 
-    if (!stored) return DEFAULT_PROFILE;
+function getStoredProfile(
+  storageKey: string,
+  accountName: string,
+  accountEmail: string,
+): TenantProfile {
+  try {
+    const stored = localStorage.getItem(storageKey);
+
+    if (!stored) {
+      return {
+        ...DEFAULT_PROFILE,
+        name: accountName,
+        email: accountEmail,
+      };
+    }
 
     const parsed = JSON.parse(stored) as Partial<TenantProfile>;
 
     return {
       ...DEFAULT_PROFILE,
       ...parsed,
-      email: DEFAULT_PROFILE.email,
-    };
-  } catch {
-    return DEFAULT_PROFILE;
-  }
-}
-
-function getStoredPreferences() {
-  try {
-    const stored = localStorage.getItem(PREFERENCES_STORAGE_KEY);
-
-    if (!stored) {
-      return {
-        emailNotifications: true,
-        enquiryUpdates: true,
-      };
-    }
-
-    return JSON.parse(stored) as {
-      emailNotifications: boolean;
-      enquiryUpdates: boolean;
+      name: accountName,
+      email: accountEmail,
     };
   } catch {
     return {
-      emailNotifications: true,
-      enquiryUpdates: true,
+      ...DEFAULT_PROFILE,
+      name: accountName,
+      email: accountEmail,
     };
+  }
+}
+
+function getStoredPreferences(storageKey: string): NotificationPreferences {
+  try {
+    const stored = localStorage.getItem(storageKey);
+
+    if (!stored) {
+      return DEFAULT_PREFERENCES;
+    }
+
+    const parsed = JSON.parse(stored) as Partial<NotificationPreferences>;
+
+    return {
+      ...DEFAULT_PREFERENCES,
+      ...parsed,
+    };
+  } catch {
+    return DEFAULT_PREFERENCES;
   }
 }
 
 function ProfilePage() {
   const navigate = useNavigate();
+
   const { favoriteIds } = useFavorites();
   const { enquiries } = useEnquiries();
+  const { listings } = useListings();
 
-  const [profile, setProfile] = useState<TenantProfile>(getStoredProfile);
-  const [form, setForm] = useState<TenantProfile>(getStoredProfile);
+  const { user, logout, updateProfile } = useAuth();
+
+  const isLandlord = user?.role === "landlord";
+  const accountLabel = isLandlord ? "Landlord" : "Tenant";
+
+  const dashboardPath = isLandlord ? "/landlord/dashboard" : "/dashboard";
+
+  const accountId = user?.id ?? "guest";
+
+  const profileStorageKey = `dwello-profile-${accountId}`;
+  const preferencesStorageKey = `dwello-preferences-${accountId}`;
+
+  const [profile, setProfile] = useState<TenantProfile>(() =>
+    getStoredProfile(profileStorageKey, user?.name ?? "", user?.email ?? ""),
+  );
+
+  const [form, setForm] = useState<TenantProfile>(() =>
+    getStoredProfile(profileStorageKey, user?.name ?? "", user?.email ?? ""),
+  );
+
   const [isEditing, setIsEditing] = useState(false);
 
   const [passwordForm, setPasswordForm] = useState({
@@ -100,7 +141,10 @@ function ProfilePage() {
     confirmPassword: "",
   });
 
-  const [preferences, setPreferences] = useState(getStoredPreferences);
+  const [preferences, setPreferences] = useState<NotificationPreferences>(() =>
+    getStoredPreferences(preferencesStorageKey),
+  );
+
   const [activeSection, setActiveSection] = useState<
     "profile" | "security" | "preferences"
   >("profile");
@@ -109,24 +153,23 @@ function ProfilePage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [showSignOut, setShowSignOut] = useState(false);
 
+  // Persist profile details separately for each account.
   useEffect(() => {
     try {
-      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+      localStorage.setItem(profileStorageKey, JSON.stringify(profile));
     } catch {
-      // Keep the profile available in the current session.
+      // Keep profile details available in the current session.
     }
-  }, [profile]);
+  }, [profile, profileStorageKey]);
 
+  // Persist notification preferences separately for each account.
   useEffect(() => {
     try {
-      localStorage.setItem(
-        PREFERENCES_STORAGE_KEY,
-        JSON.stringify(preferences),
-      );
+      localStorage.setItem(preferencesStorageKey, JSON.stringify(preferences));
     } catch {
       // Keep preferences available in the current session.
     }
-  }, [preferences]);
+  }, [preferences, preferencesStorageKey]);
 
   const showSuccess = (message: string) => {
     setSuccessMessage(message);
@@ -146,17 +189,31 @@ function ProfilePage() {
       return;
     }
 
-    const updatedProfile = {
+    const updatedProfile: TenantProfile = {
       ...form,
       name: form.name.trim(),
+      email: user?.email ?? profile.email,
       phone: form.phone.trim(),
       location: form.location.trim(),
     };
 
-    setProfile(updatedProfile);
-    setForm(updatedProfile);
-    setIsEditing(false);
-    showSuccess("Your profile has been updated successfully.");
+    try {
+      updateProfile({
+        name: updatedProfile.name,
+      });
+
+      setProfile(updatedProfile);
+      setForm(updatedProfile);
+      setIsEditing(false);
+
+      showSuccess("Your profile has been updated successfully.");
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to update your profile.",
+      );
+    }
   };
 
   const handleCancelEdit = () => {
@@ -196,10 +253,14 @@ function ProfilePage() {
 
   const handleSignOut = () => {
     setShowSignOut(false);
-    navigate("/login");
+    logout();
+    navigate("/login", { replace: true });
   };
 
-  const updatePreference = (key: keyof typeof preferences, value: boolean) => {
+  const updatePreference = (
+    key: keyof NotificationPreferences,
+    value: boolean,
+  ) => {
     setPreferences((current) => ({
       ...current,
       [key]: value,
@@ -208,7 +269,15 @@ function ProfilePage() {
     showSuccess("Your preferences have been saved.");
   };
 
-  const displayName = profile.name || "Tenant";
+  const displayName = user?.name || profile.name || "User";
+
+  const profileDescription = isLandlord
+    ? "Your details help tenants identify and contact you about your properties."
+    : "Your details help landlords respond to your enquiries.";
+
+  const listingCount = listings.filter(
+    (listing) => listing.status !== "archived",
+  ).length;
 
   const navigationItems = [
     {
@@ -238,12 +307,14 @@ function ProfilePage() {
         <div className="mb-6">
           <div className="mb-2 flex items-center gap-2 text-sm text-muted">
             <Link
-              to="/dashboard"
+              to={dashboardPath}
               className="transition-colors hover:text-brand"
             >
               Dashboard
             </Link>
+
             <ChevronRight size={14} />
+
             <span className="font-semibold text-ink">My Profile</span>
           </div>
 
@@ -252,6 +323,7 @@ function ProfilePage() {
               <h1 className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-[34px]">
                 My Profile
               </h1>
+
               <p className="mt-1.5 text-sm text-muted">
                 Manage your personal information and account settings.
               </p>
@@ -260,7 +332,7 @@ function ProfilePage() {
             <Badge variant="success" className="px-3 py-1.5">
               <span className="flex items-center gap-1.5">
                 <ShieldCheck size={13} />
-                Tenant account
+                {accountLabel} account
               </span>
             </Badge>
           </div>
@@ -315,6 +387,7 @@ function ProfilePage() {
                   size="xl"
                   className="ring-4 ring-brand-light"
                 />
+
                 <span className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-success text-white">
                   <Check size={11} strokeWidth={3} />
                 </span>
@@ -324,11 +397,13 @@ function ProfilePage() {
                 <h2 className="truncate text-lg font-extrabold text-ink">
                   {displayName}
                 </h2>
+
                 <p className="mt-0.5 truncate text-sm text-muted">
-                  {profile.email}
+                  {user?.email ?? profile.email}
                 </p>
+
                 <p className="mt-1 text-xs font-semibold text-success">
-                  Dwello tenant
+                  Dwello {accountLabel}
                 </p>
               </div>
             </div>
@@ -336,10 +411,11 @@ function ProfilePage() {
             <div className="grid grid-cols-2 gap-3 sm:min-w-[250px]">
               <div className="rounded-xl bg-brand-soft px-4 py-3">
                 <p className="text-2xl font-extrabold text-brand">
-                  {favoriteIds.length}
+                  {isLandlord ? listingCount : favoriteIds.length}
                 </p>
+
                 <p className="mt-0.5 text-xs font-medium text-muted">
-                  Saved properties
+                  {isLandlord ? "Listings" : "Saved properties"}
                 </p>
               </div>
 
@@ -347,8 +423,9 @@ function ProfilePage() {
                 <p className="text-2xl font-extrabold text-ink">
                   {enquiries.length}
                 </p>
+
                 <p className="mt-0.5 text-xs font-medium text-muted">
-                  Total enquiries
+                  {isLandlord ? "Enquiries received" : "Total enquiries"}
                 </p>
               </div>
             </div>
@@ -397,6 +474,7 @@ function ProfilePage() {
                       <span className="block text-sm font-bold">
                         {item.label}
                       </span>
+
                       <span
                         className={`mt-0.5 block text-[11px] ${
                           active ? "text-brand/75" : "text-muted"
@@ -425,6 +503,7 @@ function ProfilePage() {
               <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-danger-light">
                 <LogOut size={17} />
               </span>
+
               <span className="text-sm font-bold">Sign out</span>
             </button>
           </Card>
@@ -432,6 +511,7 @@ function ProfilePage() {
           {/* Content */}
           <div className="min-w-0">
             <AnimatePresence mode="wait">
+              {/* Personal information */}
               {activeSection === "profile" && (
                 <motion.div
                   key="profile"
@@ -446,8 +526,9 @@ function ProfilePage() {
                         <h2 className="text-lg font-extrabold text-ink">
                           Personal information
                         </h2>
+
                         <p className="mt-1 text-sm text-muted">
-                          Your details help landlords respond to your enquiries.
+                          {profileDescription}
                         </p>
                       </div>
 
@@ -486,7 +567,7 @@ function ProfilePage() {
 
                         <Input
                           label="Email address"
-                          value={profile.email}
+                          value={user?.email ?? profile.email}
                           disabled
                           leftIcon={<Mail size={16} />}
                           hint="Email changes will be supported after authentication is connected."
@@ -545,10 +626,12 @@ function ProfilePage() {
                       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-info-light text-info">
                         <CircleUserRound size={19} />
                       </span>
+
                       <div>
                         <h3 className="font-bold text-ink">
                           Your Dwello account
                         </h3>
+
                         <p className="mt-1 text-sm leading-relaxed text-muted">
                           Your account is currently running in frontend demo
                           mode. Profile details are stored locally in this
@@ -560,6 +643,7 @@ function ProfilePage() {
                 </motion.div>
               )}
 
+              {/* Password & security */}
               {activeSection === "security" && (
                 <motion.div
                   key="security"
@@ -573,10 +657,12 @@ function ProfilePage() {
                       <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-light text-brand">
                         <KeyRound size={20} />
                       </span>
+
                       <div>
                         <h2 className="text-lg font-extrabold text-ink">
                           Password & security
                         </h2>
+
                         <p className="mt-0.5 text-sm text-muted">
                           Update your account password.
                         </p>
@@ -642,6 +728,7 @@ function ProfilePage() {
                 </motion.div>
               )}
 
+              {/* Notification preferences */}
               {activeSection === "preferences" && (
                 <motion.div
                   key="preferences"
@@ -655,6 +742,7 @@ function ProfilePage() {
                       <h2 className="text-lg font-extrabold text-ink">
                         Notification preferences
                       </h2>
+
                       <p className="mt-1 text-sm text-muted">
                         Choose which updates you'd like to receive.
                       </p>
@@ -667,10 +755,12 @@ function ProfilePage() {
                           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-light text-brand">
                             <Mail size={18} />
                           </span>
+
                           <div>
                             <h3 className="text-sm font-bold text-ink">
                               Email notifications
                             </h3>
+
                             <p className="mt-1 text-xs leading-relaxed text-muted">
                               Receive important account updates by email.
                             </p>
@@ -739,13 +829,16 @@ function ProfilePage() {
                           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-success-light text-success">
                             <Bell size={18} />
                           </span>
+
                           <div>
                             <h3 className="text-sm font-bold text-ink">
                               Enquiry updates
                             </h3>
+
                             <p className="mt-1 text-xs leading-relaxed text-muted">
-                              Stay informed when landlords respond to your
-                              enquiries.
+                              {isLandlord
+                                ? "Stay informed when tenants send enquiries about your properties."
+                                : "Stay informed when landlords respond to your enquiries."}
                             </p>
                           </div>
                         </div>
@@ -852,6 +945,7 @@ function ProfilePage() {
               >
                 Sign out of Dwello?
               </h2>
+
               <p className="mt-2 text-sm leading-relaxed text-muted">
                 You'll be redirected to the login page. Your saved properties
                 and enquiries will remain in this browser.
@@ -861,6 +955,7 @@ function ProfilePage() {
                 <Button variant="outline" onClick={() => setShowSignOut(false)}>
                   Stay here
                 </Button>
+
                 <Button
                   variant="danger"
                   onClick={handleSignOut}
