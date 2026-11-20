@@ -1,14 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import {
-  ArrowUpRight,
-  House,
-  LayoutDashboard,
-  LogOut,
-  Menu,
-  UserRound,
-  X,
-} from "lucide-react";
+import { ArrowUpRight, House, LogOut, Menu, UserRound, X } from "lucide-react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/AuthContext";
 
@@ -22,25 +14,29 @@ function Navbar() {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
 
-  const logoDestination =
-    user?.role === "landlord" ? "/landlord/dashboard" : "/properties";
+  const isLandlord = user?.role === "landlord";
+  const isTenant = user?.role === "tenant";
 
-  const navigationLinks =
-    user?.role === "landlord"
+  const logoDestination = isLandlord
+    ? "/landlord/dashboard"
+    : isTenant
+      ? "/dashboard"
+      : "/properties";
+
+  const navigationLinks = isLandlord
+    ? [
+        { label: "My Listings", to: "/landlord/listings" },
+        { label: "Enquiries", to: "/landlord/enquiries" },
+        { label: "Dashboard", to: "/landlord/dashboard" },
+      ]
+    : isTenant
       ? [
-          { label: "My Listings", to: "/landlord/listings" },
-          { label: "Enquiries", to: "/landlord/enquiries" },
-          { label: "Dashboard", to: "/landlord/dashboard" },
+          { label: "Explore Properties", to: "/properties" },
+          { label: "Saved Properties", to: "/saved" },
+          { label: "My Enquiries", to: "/my-enquiries" },
+          { label: "Dashboard", to: "/dashboard" },
         ]
-      : [
-          ...(user?.role === "tenant"
-            ? [
-                { label: "Saved Properties", to: "/saved" },
-                { label: "My Enquiries", to: "/my-enquiries" },
-                { label: "Dashboard", to: "/dashboard" },
-              ]
-            : []),
-        ];
+      : [];
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -85,9 +81,6 @@ function Navbar() {
       navigate("/login", { replace: true });
     }, 300);
   };
-
-  const dashboardPath =
-    user?.role === "landlord" ? "/landlord/dashboard" : "/dashboard";
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-white/95 backdrop-blur-xl">
@@ -351,19 +344,6 @@ function Navbar() {
                     </span>
                   </Link>
 
-                  <Link
-                    to={dashboardPath}
-                    onClick={closeMobileMenu}
-                    className="
-                      mt-1 flex items-center gap-2 rounded-lg px-3 py-3
-                      text-sm font-bold text-ink-secondary
-                      transition-colors hover:bg-surface-muted hover:text-brand
-                    "
-                  >
-                    <LayoutDashboard size={17} />
-                    My Dashboard
-                  </Link>
-
                   <button
                     type="button"
                     onClick={handleLogout}
@@ -406,6 +386,7 @@ function Navbar() {
               className="flex flex-col items-center gap-3"
             >
               <p className="text-sm font-bold text-ink">Signing you out...</p>
+
               <motion.div className="h-1 w-28 overflow-hidden rounded-full bg-brand/10">
                 <motion.div
                   className="h-full rounded-full bg-brand"

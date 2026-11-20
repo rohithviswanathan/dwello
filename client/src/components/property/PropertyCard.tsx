@@ -39,6 +39,9 @@ function PropertyCard({
   const handleFavorite = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
 
+    // Landlords cannot save properties.
+    if (user?.role === "landlord") return;
+
     // Guests must authenticate before saving a property.
     if (!user) {
       navigate("/login", {
@@ -50,6 +53,9 @@ function PropertyCard({
 
       return;
     }
+
+    // Only tenants can modify favorites.
+    if (user.role !== "tenant") return;
 
     onFavoriteToggle?.(property.id);
   };
@@ -137,40 +143,42 @@ function PropertyCard({
           </span>
         )}
 
-        {/* Favorite */}
-        <button
-          type="button"
-          aria-label={
-            isFavorite ? "Remove from saved properties" : "Save property"
-          }
-          aria-pressed={isFavorite}
-          onClick={handleFavorite}
-          className="
-            absolute right-3 top-3 flex h-9 w-9
-            items-center justify-center rounded-full
-            bg-white/95 text-ink shadow-card
-            backdrop-blur-sm transition-colors duration-200
-            hover:bg-white hover:text-brand
-            focus-visible:outline-none focus-visible:ring-2
-            focus-visible:ring-brand/40
-          "
-        >
-          <motion.span
-            animate={{
-              scale: isFavorite ? [1, 1.25, 1] : 1,
-            }}
-            transition={{ duration: 0.25 }}
-            className="flex"
+        {/* Favorite - hidden for landlords */}
+        {user?.role !== "landlord" && (
+          <button
+            type="button"
+            aria-label={
+              isFavorite ? "Remove from saved properties" : "Save property"
+            }
+            aria-pressed={isFavorite}
+            onClick={handleFavorite}
+            className="
+              absolute right-3 top-3 flex h-9 w-9
+              items-center justify-center rounded-full
+              bg-white/95 text-ink shadow-card
+              backdrop-blur-sm transition-colors duration-200
+              hover:bg-white hover:text-brand
+              focus-visible:outline-none focus-visible:ring-2
+              focus-visible:ring-brand/40
+            "
           >
-            <Heart
-              size={17}
-              strokeWidth={2}
-              className={
-                isFavorite ? "fill-brand text-brand" : "text-ink-secondary"
-              }
-            />
-          </motion.span>
-        </button>
+            <motion.span
+              animate={{
+                scale: isFavorite ? [1, 1.25, 1] : 1,
+              }}
+              transition={{ duration: 0.25 }}
+              className="flex"
+            >
+              <Heart
+                size={17}
+                strokeWidth={2}
+                className={
+                  isFavorite ? "fill-brand text-brand" : "text-ink-secondary"
+                }
+              />
+            </motion.span>
+          </button>
+        )}
       </div>
 
       {/* Property information */}

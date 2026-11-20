@@ -297,7 +297,6 @@ function EnquiryDetailsModal({
   enquiry,
   onClose,
   onStatusChange,
-  onOpenProperty,
 }: EnquiryDetailsModalProps) {
   return (
     <AnimatePresence>
@@ -391,15 +390,6 @@ function EnquiryDetailsModal({
                       / month
                     </span>
                   </p>
-
-                  <button
-                    type="button"
-                    onClick={() => onOpenProperty(enquiry.propertyId)}
-                    className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-brand transition-colors hover:text-brand-dark"
-                  >
-                    View property
-                    <ArrowRight size={14} />
-                  </button>
                 </div>
               </div>
 

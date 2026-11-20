@@ -48,6 +48,8 @@ export function FavoritesProvider({ children }: FavoritesProviderProps) {
 
   const { user } = useAuth();
 
+  const isTenant = user?.role === "tenant";
+
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(favoriteIds));
@@ -57,14 +59,14 @@ export function FavoritesProvider({ children }: FavoritesProviderProps) {
   }, [favoriteIds]);
 
   const isFavorite = useCallback(
-    (propertyId: string) => favoriteIds.includes(propertyId),
-    [favoriteIds],
+    (propertyId: string) => isTenant && favoriteIds.includes(propertyId),
+    [favoriteIds, isTenant],
   );
 
-  // Authentication guard: guests cannot modify favorites.
+  // Only authenticated tenants can add or toggle favorites.
   const toggleFavorite = useCallback(
     (propertyId: string) => {
-      if (!user) return;
+      if (!isTenant) return;
 
       setFavoriteIds((current) =>
         current.includes(propertyId)
@@ -72,23 +74,25 @@ export function FavoritesProvider({ children }: FavoritesProviderProps) {
           : [...current, propertyId],
       );
     },
-    [user],
+    [isTenant],
   );
 
+  // Only authenticated tenants can remove favorites.
   const removeFavorite = useCallback(
     (propertyId: string) => {
-      if (!user) return;
+      if (!isTenant) return;
 
       setFavoriteIds((current) => current.filter((id) => id !== propertyId));
     },
-    [user],
+    [isTenant],
   );
 
+  // Only authenticated tenants can clear favorites.
   const clearFavorites = useCallback(() => {
-    if (!user) return;
+    if (!isTenant) return;
 
     setFavoriteIds([]);
-  }, [user]);
+  }, [isTenant]);
 
   return (
     <FavoritesContext.Provider

@@ -102,7 +102,7 @@ export default function LoginPage() {
                 Welcome back
               </p>
 
-              <h1 className="mt-4 pt-5 font-display text-4xl font-semibold leading-tight">
+              <h1 className="mt-4 pt-5 font-display text-4xl font-semibold leading-tight text">
                 Your next chapter starts at home.
               </h1>
 

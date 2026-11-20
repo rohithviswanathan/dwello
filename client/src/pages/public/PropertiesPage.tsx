@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
+import { Navigate } from "react-router-dom";
 
 import { motion } from "motion/react";
 
-import { ArrowDownUp, Heart, SlidersHorizontal } from "lucide-react";
+import { ArrowDownUp, SlidersHorizontal } from "lucide-react";
 
 import SearchBar from "../../components/property/SearchBar";
 
@@ -21,6 +22,7 @@ import Badge from "../../components/ui/Badge";
 import { useFavorites } from "../../hooks/FavouritesContext";
 
 import { INITIAL_LISTINGS, useListings } from "../../hooks/ListingsContext";
+import { useAuth } from "../../hooks/AuthContext";
 
 // Temporary compatibility export for pages that haven't migrated yet.
 // These pages will be connected to ListingsContext in the next steps.
@@ -41,6 +43,8 @@ type SortOption = "recommended" | "rent-low" | "rent-high" | "area";
 
 export default function PropertiesPage() {
   const [searchValue, setSearchValue] = useState("");
+  const { user } = useAuth();
+  const isLandlord = user?.role === "landlord";
 
   const [draftFilters, setDraftFilters] =
     useState<PropertyFilters>(DEFAULT_FILTERS);
@@ -52,7 +56,7 @@ export default function PropertiesPage() {
 
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { favoriteIds, isFavorite, toggleFavorite } = useFavorites();
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   const { listings } = useListings();
 
@@ -184,6 +188,10 @@ export default function PropertiesPage() {
     setCurrentPage(1);
   };
 
+  if (isLandlord) {
+    return <Navigate to="/landlord/dashboard" replace />;
+  }
+
   return (
     <main className="min-h-screen bg-canvas">
       <div className="mx-auto max-w-[1300px] px-4 py-7 sm:px-6 lg:px-8">
@@ -276,14 +284,6 @@ export default function PropertiesPage() {
                 </select>
               </div>
             </div>
-
-            {favoriteIds.length > 0 && (
-              <div className="mb-4 flex items-center gap-2 text-sm text-muted">
-                <Heart size={15} className="text-brand" />
-                {favoriteIds.length} saved{" "}
-                {favoriteIds.length === 1 ? "property" : "properties"}
-              </div>
-            )}
 
             <PropertyGrid
               properties={paginatedProperties}

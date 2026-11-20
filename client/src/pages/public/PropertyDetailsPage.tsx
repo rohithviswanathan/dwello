@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   Bath,
@@ -117,6 +117,11 @@ export default function PropertyDetailsPage() {
 
     setEnquirySubmitted(true);
   };
+
+  // Landlords should not access tenant-facing property details.
+  if (isLandlord) {
+    return <Navigate to="/landlord/dashboard" replace />;
+  }
 
   // Missing, draft and archived listings should not be visible to tenants.
   if (

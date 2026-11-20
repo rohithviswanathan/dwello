@@ -605,7 +605,7 @@ function LandLordDashboardPage() {
                     to={
                       isManageOnly
                         ? "/landlord/listings"
-                        : `/properties/${property.id}`
+                        : `/landlord/dashboard`
                     }
                     className="group overflow-hidden rounded-2xl border border-border bg-white shadow-soft transition-all duration-200 hover:-translate-y-1 hover:border-brand/20 hover:shadow-card"
                   >
@@ -638,14 +638,9 @@ function LandLordDashboardPage() {
                         <p className="text-sm font-extrabold text-brand">
                           {formatRupee(property.rent)}
                           <span className="ml-1 text-[10px] font-medium text-muted">
-                            /mo
+                            / month
                           </span>
                         </p>
-
-                        <span className="flex items-center gap-1 text-[11px] font-bold text-muted transition-colors group-hover:text-brand">
-                          {isManageOnly ? "Manage" : "View"}
-                          <ArrowUpRight size={13} />
-                        </span>
                       </div>
                     </div>
                   </Link>

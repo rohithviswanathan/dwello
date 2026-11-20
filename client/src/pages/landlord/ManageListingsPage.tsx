@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   ChevronDown,
   Clock3,
-  Eye,
   FileText,
   Home,
   Plus,
@@ -57,7 +56,6 @@ const statusConfig: Record<
 const filterOptions: { label: string; value: StatusFilter }[] = [
   { label: "All listings", value: "all" },
   { label: "Available", value: "available" },
-  { label: "New", value: "new" },
   { label: "Drafts", value: "draft" },
   { label: "Rented", value: "rented" },
   { label: "Archived", value: "archived" },
@@ -293,9 +291,27 @@ function ManageListingsPage() {
                       </span>
                     )}
 
+                    {option.value === "available" && (
+                      <span className="ml-1.5 opacity-75">
+                        {listingCounts.available}
+                      </span>
+                    )}
+
                     {option.value === "draft" && (
                       <span className="ml-1.5 opacity-75">
                         {listingCounts.drafts}
+                      </span>
+                    )}
+
+                    {option.value === "rented" && (
+                      <span className="ml-1.5 opacity-75">
+                        {listingCounts.rented}
+                      </span>
+                    )}
+
+                    {option.value === "archived" && (
+                      <span className="ml-1.5 opacity-75">
+                        {listingCounts.archived}
                       </span>
                     )}
                   </button>
@@ -382,19 +398,6 @@ function ManageListingsPage() {
                       </div>
 
                       <div className="flex shrink-0 items-center gap-1.5">
-                        {status !== "draft" && status !== "archived" && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              navigate(`/properties/${property.id}`)
-                            }
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-bold text-ink-secondary transition-all hover:border-brand/30 hover:bg-brand-light hover:text-brand"
-                          >
-                            <Eye size={14} />
-                            Preview
-                          </button>
-                        )}
-
                         {status !== "archived" && (
                           <button
                             type="button"
@@ -542,13 +545,13 @@ function ManageListingsPage() {
               )}
             </span>
 
-            <h2 className="mt-4 text-base font-extrabold text-ink">
+            <h2 className="mt-4 pt-3 text-base font-extrabold text-ink">
               {search || activeFilter !== "all"
                 ? "No matching properties"
                 : "No properties yet"}
             </h2>
 
-            <p className="mx-auto mt-1.5 max-w-sm text-sm leading-relaxed text-muted">
+            <p className="mx-auto mt-1.5 text-sm leading-relaxed text-muted">
               {search || activeFilter !== "all"
                 ? "Try changing your search term or selecting a different status filter."
                 : "Your property listings will appear here once you add your first property."}
@@ -592,12 +595,12 @@ function ManageListingsPage() {
 
             <h2
               id="delete-listing-title"
-              className="mt-4 text-lg font-extrabold text-ink"
+              className="mt-4 pt-3 text-lg font-extrabold text-ink"
             >
               Delete this property?
             </h2>
 
-            <p className="mt-2 text-sm leading-relaxed text-muted">
+            <p className="mt-2 pt-2 text-sm leading-relaxed text-muted">
               This listing will be permanently removed from your current Dwello
               workspace. This action cannot be undone.
             </p>
