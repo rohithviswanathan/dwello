@@ -47,7 +47,7 @@ export default function SavedPropertiesPage() {
               Saved properties
             </h1>
 
-            <p className="mt-2 text-sm text-muted sm:text-base">
+            <p className="mt-2 pt-1 text-sm text-muted sm:text-base">
               Keep track of the homes you love and revisit them anytime.
             </p>
           </div>
@@ -92,7 +92,7 @@ export default function SavedPropertiesPage() {
               Nothing saved yet
             </h2>
 
-            <p className="mt-2 max-w-sm text-sm leading-6 text-muted">
+            <p className="mt-2 pt-2 max-w-sm text-sm leading-6 text-muted">
               Found a property you like? Tap the heart icon on any listing and
               it will show up here.
             </p>

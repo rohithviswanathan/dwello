@@ -324,7 +324,7 @@ function ProfilePage() {
                 My Profile
               </h1>
 
-              <p className="mt-1.5 text-sm text-muted">
+              <p className="mt-1.5 pt-1 text-sm text-muted">
                 Manage your personal information and account settings.
               </p>
             </div>
@@ -433,9 +433,9 @@ function ProfilePage() {
         </Card>
 
         {/* Main layout */}
-        <div className="grid items-start gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
+        <div className="grid items-start gap-5 lg:grid-cols-[300px_minmax(0,1fr)]">
           {/* Sidebar */}
-          <Card padding="sm" className="lg:sticky lg:top-24">
+          <Card padding="sm">
             <p className="px-3 pb-3 pt-2 text-[11px] font-extrabold uppercase tracking-[1.2px] text-subtle">
               Account settings
             </p>
@@ -570,7 +570,6 @@ function ProfilePage() {
                           value={user?.email ?? profile.email}
                           disabled
                           leftIcon={<Mail size={16} />}
-                          hint="Email changes will be supported after authentication is connected."
                         />
 
                         <Input
@@ -946,7 +945,7 @@ function ProfilePage() {
                 Sign out of Dwello?
               </h2>
 
-              <p className="mt-2 text-sm leading-relaxed text-muted">
+              <p className="mt-2 pt-1 text-sm leading-relaxed text-muted">
                 You'll be redirected to the login page. Your saved properties
                 and enquiries will remain in this browser.
               </p>

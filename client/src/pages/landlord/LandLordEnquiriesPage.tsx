@@ -380,12 +380,12 @@ function EnquiryDetailsModal({
                     {enquiry.propertyTitle}
                   </h3>
 
-                  <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
+                  <p className="mt-1 pt-1 flex items-center gap-1.5 text-sm text-muted">
                     <MapPin size={14} />
                     {enquiry.propertyLocation}, {enquiry.city}
                   </p>
 
-                  <p className="mt-2 font-extrabold text-brand">
+                  <p className="mt-2 pt-1 pl-0.5 font-extrabold text-brand">
                     {formatCurrency(enquiry.rent)}
                     <span className="ml-1 text-xs font-medium text-muted">
                       / month
@@ -426,12 +426,12 @@ function EnquiryDetailsModal({
               </div>
 
               <div>
-                <h3 className="mb-2 flex items-center gap-2 text-sm font-extrabold text-ink">
+                <h3 className="mb-2 pl-1 flex items-center gap-2 text-sm font-extrabold text-ink">
                   <MessageSquare size={16} className="text-brand" />
                   Message from tenant
                 </h3>
 
-                <div className="rounded-lg border border-border bg-canvas/60 p-4">
+                <div className="rounded-lg border border-border bg-canvas/60 p-4 mt-3">
                   <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink-secondary">
                     {enquiry.message || "No message provided."}
                   </p>

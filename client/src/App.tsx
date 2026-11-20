@@ -9,6 +9,7 @@ import {
 import type { ReactNode } from "react";
 
 import { House } from "lucide-react";
+import { motion } from "motion/react";
 
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
@@ -97,6 +98,7 @@ function AppLayout() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      {/* Authentication page header */}
       {isAuthPage ? (
         <header className="flex h-[68px] shrink-0 items-center border-b border-border bg-white px-5 sm:px-8">
           <Link
@@ -117,124 +119,135 @@ function AppLayout() {
         <Navbar />
       )}
 
+      {/* Animated route content */}
       <div className="flex-1">
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<PropertiesPage />} />
-          <Route path="/properties" element={<PropertiesPage />} />
-          <Route
-            path="/properties/:propertyId"
-            element={<PropertyDetailsPage />}
-          />
+        <motion.div
+          key={pathname}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            duration: 0.22,
+            ease: "easeOut",
+          }}
+        >
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<PropertiesPage />} />
+            <Route path="/properties" element={<PropertiesPage />} />
+            <Route
+              path="/properties/:propertyId"
+              element={<PropertyDetailsPage />}
+            />
 
-          {/* Tenant routes */}
-          <Route
-            path="/saved"
-            element={
-              <RequireRole role="tenant">
-                <SavedPropertiesPage />
-              </RequireRole>
-            }
-          />
+            {/* Tenant routes */}
+            <Route
+              path="/saved"
+              element={
+                <RequireRole role="tenant">
+                  <SavedPropertiesPage />
+                </RequireRole>
+              }
+            />
 
-          <Route
-            path="/my-enquiries"
-            element={
-              <RequireRole role="tenant">
-                <MyEnquiriesPage />
-              </RequireRole>
-            }
-          />
+            <Route
+              path="/my-enquiries"
+              element={
+                <RequireRole role="tenant">
+                  <MyEnquiriesPage />
+                </RequireRole>
+              }
+            />
 
-          <Route
-            path="/dashboard"
-            element={
-              <RequireRole role="tenant">
-                <TenantDashboardPage />
-              </RequireRole>
-            }
-          />
+            <Route
+              path="/dashboard"
+              element={
+                <RequireRole role="tenant">
+                  <TenantDashboardPage />
+                </RequireRole>
+              }
+            />
 
-          {/* Shared profile route — Tenant and Landlord */}
-          <Route
-            path="/profile"
-            element={
-              <RequireAuthenticated>
-                <ProfilePage />
-              </RequireAuthenticated>
-            }
-          />
+            {/* Shared profile route — Tenant and Landlord */}
+            <Route
+              path="/profile"
+              element={
+                <RequireAuthenticated>
+                  <ProfilePage />
+                </RequireAuthenticated>
+              }
+            />
 
-          {/* Landlord routes */}
-          <Route
-            path="/landlord/dashboard"
-            element={
-              <RequireRole role="landlord">
-                <LandLordDashboardPage />
-              </RequireRole>
-            }
-          />
+            {/* Landlord routes */}
+            <Route
+              path="/landlord/dashboard"
+              element={
+                <RequireRole role="landlord">
+                  <LandLordDashboardPage />
+                </RequireRole>
+              }
+            />
 
-          <Route
-            path="/landlord/listings"
-            element={
-              <RequireRole role="landlord">
-                <ManageListingsPage />
-              </RequireRole>
-            }
-          />
+            <Route
+              path="/landlord/listings"
+              element={
+                <RequireRole role="landlord">
+                  <ManageListingsPage />
+                </RequireRole>
+              }
+            />
 
-          <Route
-            path="/landlord/listings/new"
-            element={
-              <RequireRole role="landlord">
-                <AddPropertyPage />
-              </RequireRole>
-            }
-          />
+            <Route
+              path="/landlord/listings/new"
+              element={
+                <RequireRole role="landlord">
+                  <AddPropertyPage />
+                </RequireRole>
+              }
+            />
 
-          <Route
-            path="/landlord/listings/:listingId/edit"
-            element={
-              <RequireRole role="landlord">
-                <EditPropertyPage />
-              </RequireRole>
-            }
-          />
+            <Route
+              path="/landlord/listings/:listingId/edit"
+              element={
+                <RequireRole role="landlord">
+                  <EditPropertyPage />
+                </RequireRole>
+              }
+            />
 
-          <Route
-            path="/landlord/enquiries"
-            element={
-              <RequireRole role="landlord">
-                <LandLordEnquiriesPage />
-              </RequireRole>
-            }
-          />
+            <Route
+              path="/landlord/enquiries"
+              element={
+                <RequireRole role="landlord">
+                  <LandLordEnquiriesPage />
+                </RequireRole>
+              }
+            />
 
-          {/* Guest routes */}
-          <Route
-            path="/login"
-            element={
-              <GuestOnlyRoute>
-                <LoginPage />
-              </GuestOnlyRoute>
-            }
-          />
+            {/* Guest routes */}
+            <Route
+              path="/login"
+              element={
+                <GuestOnlyRoute>
+                  <LoginPage />
+                </GuestOnlyRoute>
+              }
+            />
 
-          <Route
-            path="/register"
-            element={
-              <GuestOnlyRoute>
-                <RegisterPage />
-              </GuestOnlyRoute>
-            }
-          />
+            <Route
+              path="/register"
+              element={
+                <GuestOnlyRoute>
+                  <RegisterPage />
+                </GuestOnlyRoute>
+              }
+            />
 
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/properties" replace />} />
-        </Routes>
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/properties" replace />} />
+          </Routes>
+        </motion.div>
       </div>
 
       {!isAuthPage && <Footer />}

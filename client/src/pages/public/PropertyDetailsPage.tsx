@@ -61,14 +61,31 @@ export default function PropertyDetailsPage() {
 
   const formatRent = (amount: number) => `₹${amount.toLocaleString("en-IN")}`;
 
-  const handleAuthenticationRedirect = (path: "/login" | "/register") => {
+  const handleAuthenticationRedirect = (
+    path: "/login" | "/register",
+    message = "Please sign in or create a tenant account to enquire about this property.",
+  ) => {
     navigate(path, {
       state: {
         from: propertyPath,
-        message:
-          "Please sign in or create a tenant account to enquire about this property.",
+        message,
       },
     });
+  };
+
+  const handleFavoriteClick = () => {
+    if (!property) return;
+
+    if (isGuest) {
+      handleAuthenticationRedirect(
+        "/login",
+        "Please sign in to save this property to your favorites.",
+      );
+
+      return;
+    }
+
+    toggleFavorite(property.id);
   };
 
   const handleEnquirySubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -206,27 +223,29 @@ export default function PropertyDetailsPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => toggleFavorite(property.id)}
-            aria-pressed={isFavorite(property.id)}
-            aria-label={
-              isFavorite(property.id)
-                ? "Remove property from saved properties"
-                : "Save property"
-            }
-            className={`inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-semibold transition ${
-              isFavorite(property.id)
-                ? "border-brand bg-brand-light text-brand"
-                : "border-border bg-white text-ink hover:border-brand hover:text-brand"
-            }`}
-          >
-            <Heart
-              size={17}
-              fill={isFavorite(property.id) ? "currentColor" : "none"}
-            />
-            {isFavorite(property.id) ? "Saved" : "Save property"}
-          </button>
+          {user?.role !== "landlord" && (
+            <button
+              type="button"
+              onClick={handleFavoriteClick}
+              aria-pressed={isFavorite(property.id)}
+              aria-label={
+                isFavorite(property.id)
+                  ? "Remove property from saved properties"
+                  : "Save property"
+              }
+              className={`inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-semibold transition ${
+                isFavorite(property.id)
+                  ? "border-brand bg-brand-light text-brand"
+                  : "border-border bg-white text-ink hover:border-brand hover:text-brand"
+              }`}
+            >
+              <Heart
+                size={17}
+                fill={isFavorite(property.id) ? "currentColor" : "none"}
+              />
+              {isFavorite(property.id) ? "Saved" : "Save property"}
+            </button>
+          )}
         </motion.div>
 
         {/* Image gallery */}
@@ -521,11 +540,11 @@ export default function PropertyDetailsPage() {
                     <UserRound size={19} />
                   </div>
 
-                  <p className="mt-3 text-sm font-bold text-ink">
+                  <p className="mt-3 pt-1.5 text-sm font-bold text-ink">
                     Tenant access only
                   </p>
 
-                  <p className="mt-1 text-xs leading-5 text-muted">
+                  <p className="mt-1 pt-1 text-xs leading-5 text-muted">
                     Enquiries are available to tenant accounts. You can manage
                     your own property listings and incoming enquiries from your
                     landlord dashboard.

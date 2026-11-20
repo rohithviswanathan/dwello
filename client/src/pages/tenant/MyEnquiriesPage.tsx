@@ -90,7 +90,7 @@ export default function MyEnquiriesPage() {
               My enquiries
             </h1>
 
-            <p className="mt-2 text-sm text-muted">
+            <p className="mt-2 pt-1 text-sm text-muted">
               Keep track of your property enquiries and their latest status.
             </p>
           </div>

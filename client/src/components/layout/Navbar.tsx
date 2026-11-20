@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
   ArrowUpRight,
@@ -10,53 +10,34 @@ import {
   X,
 } from "lucide-react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-
 import { useAuth } from "../../hooks/AuthContext";
 
 function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const logoutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const location = useLocation();
   const navigate = useNavigate();
-
   const { user, isAuthenticated, logout } = useAuth();
 
-  // Role-based logo destination
   const logoDestination =
     user?.role === "landlord" ? "/landlord/dashboard" : "/properties";
 
-  // Role-based navigation
   const navigationLinks =
     user?.role === "landlord"
       ? [
-          {
-            label: "My Listings",
-            to: "/landlord/listings",
-          },
-          {
-            label: "Enquiries",
-            to: "/landlord/enquiries",
-          },
-          {
-            label: "Dashboard",
-            to: "/landlord/dashboard",
-          },
+          { label: "My Listings", to: "/landlord/listings" },
+          { label: "Enquiries", to: "/landlord/enquiries" },
+          { label: "Dashboard", to: "/landlord/dashboard" },
         ]
       : [
           ...(user?.role === "tenant"
             ? [
-                {
-                  label: "Saved Properties",
-                  to: "/saved",
-                },
-                {
-                  label: "My Enquiries",
-                  to: "/my-enquiries",
-                },
-                {
-                  label: "Dashboard",
-                  to: "/dashboard",
-                },
+                { label: "Saved Properties", to: "/saved" },
+                { label: "My Enquiries", to: "/my-enquiries" },
+                { label: "Dashboard", to: "/dashboard" },
               ]
             : []),
         ];
@@ -81,14 +62,28 @@ function Navbar() {
     };
   }, [mobileMenuOpen]);
 
+  useEffect(() => {
+    return () => {
+      if (logoutTimerRef.current) {
+        clearTimeout(logoutTimerRef.current);
+      }
+    };
+  }, []);
+
   const closeMobileMenu = () => {
     setMobileMenuOpen(false);
   };
 
   const handleLogout = () => {
-    logout();
+    if (loggingOut) return;
+
+    setLoggingOut(true);
     closeMobileMenu();
-    navigate("/properties", { replace: true });
+
+    logoutTimerRef.current = setTimeout(() => {
+      logout();
+      navigate("/login", { replace: true });
+    }, 300);
   };
 
   const dashboardPath =
@@ -209,12 +204,14 @@ function Navbar() {
               <button
                 type="button"
                 onClick={handleLogout}
+                disabled={loggingOut}
                 className="
                   inline-flex items-center gap-2 rounded-lg
                   border border-border px-3.5 py-2.5
                   text-[13px] font-bold text-ink-secondary
                   transition-colors duration-200
                   hover:border-brand/30 hover:bg-brand-light hover:text-brand
+                  disabled:pointer-events-none disabled:opacity-60
                 "
               >
                 <LogOut size={15} />
@@ -231,6 +228,7 @@ function Navbar() {
           aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
           aria-expanded={mobileMenuOpen}
           aria-controls="dwello-mobile-menu"
+          disabled={loggingOut}
           className="
             flex h-10 w-10 items-center justify-center
             rounded-lg border border-border text-ink
@@ -346,6 +344,7 @@ function Navbar() {
                       <span className="block truncate text-ink">
                         {user?.name}
                       </span>
+
                       <span className="mt-0.5 block text-xs font-medium capitalize text-muted">
                         {user?.role} account
                       </span>
@@ -368,10 +367,12 @@ function Navbar() {
                   <button
                     type="button"
                     onClick={handleLogout}
+                    disabled={loggingOut}
                     className="
                       mt-2 flex w-full items-center gap-2 rounded-lg
                       px-3 py-3 text-left text-sm font-bold text-danger
                       transition-colors hover:bg-danger-light
+                      disabled:pointer-events-none disabled:opacity-60
                     "
                   >
                     <LogOut size={17} />
@@ -380,6 +381,40 @@ function Navbar() {
                 </>
               )}
             </motion.nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Logout transition overlay */}
+      <AnimatePresence>
+        {loggingOut && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className="
+              fixed inset-0 z-[100]
+              flex items-center justify-center
+              bg-white/80 backdrop-blur-md
+            "
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 8, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.22, delay: 0.05 }}
+              className="flex flex-col items-center gap-3"
+            >
+              <p className="text-sm font-bold text-ink">Signing you out...</p>
+              <motion.div className="h-1 w-28 overflow-hidden rounded-full bg-brand/10">
+                <motion.div
+                  className="h-full rounded-full bg-brand"
+                  initial={{ width: "0%" }}
+                  animate={{ width: "100%" }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                />
+              </motion.div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

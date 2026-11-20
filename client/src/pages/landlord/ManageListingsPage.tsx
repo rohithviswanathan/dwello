@@ -16,7 +16,6 @@ import {
   X,
   Pencil,
 } from "lucide-react";
-
 import { useListings, type ListingStatus } from "../../hooks/ListingsContext";
 import Button from "../../components/ui/Button";
 
@@ -287,11 +286,13 @@ function ManageListingsPage() {
                     }`}
                   >
                     {option.label}
+
                     {option.value === "all" && (
                       <span className="ml-1.5 opacity-75">
                         {listingCounts.total}
                       </span>
                     )}
+
                     {option.value === "draft" && (
                       <span className="ml-1.5 opacity-75">
                         {listingCounts.drafts}
@@ -368,57 +369,95 @@ function ManageListingsPage() {
                       </span>
                     </div>
 
+                    {/* Rent + Preview + Archive + Delete */}
                     <div className="mt-4 flex items-center justify-between gap-2 border-t border-border pt-3">
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-lg font-extrabold text-brand">
                           {formatRupee(property.rent)}
                         </p>
+
                         <p className="text-[10px] font-medium text-muted">
                           Monthly rent
                         </p>
                       </div>
 
-                      {status !== "draft" && status !== "archived" && (
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        {status !== "draft" && status !== "archived" && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              navigate(`/properties/${property.id}`)
+                            }
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-bold text-ink-secondary transition-all hover:border-brand/30 hover:bg-brand-light hover:text-brand"
+                          >
+                            <Eye size={14} />
+                            Preview
+                          </button>
+                        )}
+
+                        {status !== "archived" && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleStatusChange(property.id, "archived")
+                            }
+                            title="Archive listing"
+                            aria-label={`Archive ${property.title}`}
+                            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-white text-muted transition-all duration-200 hover:border-warning/40 hover:bg-warning-light hover:text-warning"
+                          >
+                            <Archive size={15} />
+                          </button>
+                        )}
+
                         <button
                           type="button"
-                          onClick={() => navigate(`/properties/${property.id}`)}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-bold text-ink-secondary transition-all hover:border-brand/30 hover:bg-brand-light hover:text-brand"
+                          onClick={() => setDeleteTarget(property.id)}
+                          title="Delete listing"
+                          aria-label={`Delete ${property.title}`}
+                          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-white text-muted transition-all duration-200 hover:border-danger/40 hover:bg-danger-light hover:text-danger"
                         >
-                          <Eye size={14} />
-                          Preview
+                          <Trash2 size={15} />
                         </button>
-                      )}
+                      </div>
                     </div>
                   </div>
 
                   {/* Listing actions */}
-                  <div className="border-t border-border bg-surface-muted/40 p-3">
-                    <div className="flex flex-wrap items-center gap-2">
+                  <div className="mt-auto border-t border-border bg-surface-muted/40 p-3">
+                    <div
+                      className={`grid grid-cols-2 gap-2 ${
+                        status === "available" || status === "new"
+                          ? "sm:grid-cols-3"
+                          : "grid-cols-2"
+                      }`}
+                    >
                       {/* Edit listing */}
                       <button
                         type="button"
                         onClick={() =>
                           navigate(`/landlord/listings/${property.id}/edit`)
                         }
-                        className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-white px-3 py-2 text-xs font-bold text-ink-secondary transition-all hover:border-brand/40 hover:bg-brand-light hover:text-brand"
+                        className="inline-flex min-w-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-white px-2 py-2 text-xs font-bold text-ink-secondary transition-all hover:border-brand/40 hover:bg-brand-light hover:text-brand"
                       >
-                        <Pencil size={14} />
-                        Edit
+                        <Pencil size={14} className="shrink-0" />
+                        <span>Edit</span>
                       </button>
 
+                      {/* Draft actions */}
                       {status === "draft" && (
                         <button
                           type="button"
                           onClick={() =>
                             handleStatusChange(property.id, "available")
                           }
-                          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-xs font-bold text-white transition-all hover:bg-brand-dark"
+                          className="inline-flex min-w-0 items-center justify-center gap-1.5 rounded-lg bg-brand px-2 py-2 text-xs font-bold text-white transition-all hover:bg-brand-dark"
                         >
-                          <CheckCircle2 size={14} />
-                          Publish
+                          <CheckCircle2 size={14} className="shrink-0" />
+                          <span>Publish</span>
                         </button>
                       )}
 
+                      {/* Published actions */}
                       {(status === "available" || status === "new") && (
                         <>
                           <button
@@ -426,10 +465,10 @@ function ManageListingsPage() {
                             onClick={() =>
                               handleStatusChange(property.id, "draft")
                             }
-                            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-white px-3 py-2 text-xs font-bold text-ink-secondary transition-all hover:border-warning/40 hover:bg-warning-light hover:text-warning"
+                            className="inline-flex min-w-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-white px-2 py-2 text-xs font-bold text-ink-secondary transition-all hover:border-warning/40 hover:bg-warning-light hover:text-warning"
                           >
-                            <FileText size={14} />
-                            Unpublish
+                            <FileText size={14} className="shrink-0" />
+                            <span>Unpublish</span>
                           </button>
 
                           <button
@@ -437,72 +476,54 @@ function ManageListingsPage() {
                             onClick={() =>
                               handleStatusChange(property.id, "rented")
                             }
-                            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-white px-3 py-2 text-xs font-bold text-ink-secondary transition-all hover:border-success/40 hover:bg-success-light hover:text-success"
+                            className="inline-flex min-w-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-white px-2 py-2 text-xs font-bold text-ink-secondary transition-all hover:border-success/40 hover:bg-success-light hover:text-success"
                           >
-                            <Home size={14} />
-                            Mark rented
+                            <Home size={14} className="shrink-0" />
+                            <span className="truncate">Mark rented</span>
                           </button>
                         </>
                       )}
 
+                      {/* Rented actions */}
                       {status === "rented" && (
                         <button
                           type="button"
                           onClick={() =>
                             handleStatusChange(property.id, "available")
                           }
-                          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-success px-3 py-2 text-xs font-bold text-white transition-all hover:bg-success/90"
+                          className="inline-flex min-w-0 items-center justify-center gap-1.5 rounded-lg bg-success px-2 py-2 text-xs font-bold text-white transition-all hover:bg-success/90"
                         >
-                          <CheckCircle2 size={14} />
-                          Mark available
+                          <CheckCircle2 size={14} className="shrink-0" />
+                          <span className="truncate">Mark available</span>
                         </button>
                       )}
 
+                      {/* Archived actions */}
                       {status === "archived" && (
                         <button
                           type="button"
                           onClick={() =>
                             handleStatusChange(property.id, "draft")
                           }
-                          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-xs font-bold text-white transition-all hover:bg-brand-dark"
+                          className="inline-flex min-w-0 items-center justify-center gap-1.5 rounded-lg bg-brand px-2 py-2 text-xs font-bold text-white transition-all hover:bg-brand-dark"
                         >
-                          <Clock3 size={14} />
-                          Restore to drafts
+                          <Clock3 size={14} className="shrink-0" />
+                          <span className="truncate">Restore to drafts</span>
                         </button>
                       )}
-
-                      {status !== "archived" && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleStatusChange(property.id, "archived")
-                          }
-                          title="Archive listing"
-                          aria-label={`Archive ${property.title}`}
-                          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-white text-muted transition-all hover:border-warning/40 hover:bg-warning-light hover:text-warning"
-                        >
-                          <Archive size={15} />
-                        </button>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() => setDeleteTarget(property.id)}
-                        title="Delete listing"
-                        aria-label={`Delete ${property.title}`}
-                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-white text-muted transition-all hover:border-danger/40 hover:bg-danger-light hover:text-danger"
-                      >
-                        <Trash2 size={15} />
-                      </button>
                     </div>
 
-                    <p className="mt-2 text-[10px] text-muted">
+                    {/* Listing status information */}
+                    <p className="mt-2 pt-2 text-[10px] leading-relaxed text-muted">
                       {status === "draft" &&
                         "This property is not visible to tenants."}
+
                       {(status === "available" || status === "new") &&
                         "This property is visible to tenants."}
+
                       {status === "rented" &&
                         "This property is currently marked as rented."}
+
                       {status === "archived" &&
                         "This property is archived and hidden from tenants."}
                     </p>

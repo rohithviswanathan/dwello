@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 
@@ -8,9 +8,12 @@ import Alert from "../../components/ui/Alert";
 import { useAuth } from "../../hooks/AuthContext";
 
 interface LoginLocationState {
-  from?: {
-    pathname?: string;
-  };
+  from?:
+    | string
+    | {
+        pathname?: string;
+      };
+  message?: string;
 }
 
 export default function LoginPage() {
@@ -18,6 +21,29 @@ export default function LoginPage() {
   const location = useLocation();
 
   const { login } = useAuth();
+
+  // Capture the incoming redirect state before clearing browser history state.
+  const [redirectState] = useState<LoginLocationState | null>(
+    () => location.state as LoginLocationState | null,
+  );
+
+  const redirectMessage = redirectState?.message;
+
+  const requestedPath =
+    typeof redirectState?.from === "string"
+      ? redirectState.from
+      : redirectState?.from?.pathname;
+
+  // Clear the redirect state from the current history entry.
+  // The message and destination remain available through component state.
+  useEffect(() => {
+    if (location.state) {
+      navigate(location.pathname, {
+        replace: true,
+        state: null,
+      });
+    }
+  }, [location.state, location.pathname, navigate]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,10 +60,6 @@ export default function LoginPage() {
 
     try {
       const authenticatedUser = login(email, password);
-
-      const locationState = location.state as LoginLocationState | null;
-
-      const requestedPath = locationState?.from?.pathname;
 
       const defaultPath =
         authenticatedUser.role === "landlord"
@@ -80,7 +102,7 @@ export default function LoginPage() {
                 Welcome back
               </p>
 
-              <h1 className="text mt-4 pt-5 font-display text-4xl font-semibold leading-tight">
+              <h1 className="mt-4 pt-5 font-display text-4xl font-semibold leading-tight">
                 Your next chapter starts at home.
               </h1>
 
@@ -119,6 +141,19 @@ export default function LoginPage() {
                 Enter your account details to continue.
               </p>
             </div>
+
+            {redirectMessage && (
+              <div className="mt-6 rounded-xl border border-brand/20 bg-brand/5 px-4 py-3 text-sm leading-6 text-ink">
+                <div className="flex items-start gap-3">
+                  <LockKeyhole
+                    size={18}
+                    className="mt-0.5 shrink-0 text-brand"
+                  />
+
+                  <p>{redirectMessage}</p>
+                </div>
+              </div>
+            )}
 
             {error && (
               <div className="mt-6">

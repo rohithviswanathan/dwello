@@ -7,6 +7,8 @@ import {
   type ReactNode,
 } from "react";
 
+import { useAuth } from "./AuthContext";
+
 interface FavoritesContextValue {
   favoriteIds: string[];
   isFavorite: (propertyId: string) => boolean;
@@ -44,6 +46,8 @@ function getStoredFavorites(): string[] {
 export function FavoritesProvider({ children }: FavoritesProviderProps) {
   const [favoriteIds, setFavoriteIds] = useState<string[]>(getStoredFavorites);
 
+  const { user } = useAuth();
+
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(favoriteIds));
@@ -57,21 +61,34 @@ export function FavoritesProvider({ children }: FavoritesProviderProps) {
     [favoriteIds],
   );
 
-  const toggleFavorite = useCallback((propertyId: string) => {
-    setFavoriteIds((current) =>
-      current.includes(propertyId)
-        ? current.filter((id) => id !== propertyId)
-        : [...current, propertyId],
-    );
-  }, []);
+  // Authentication guard: guests cannot modify favorites.
+  const toggleFavorite = useCallback(
+    (propertyId: string) => {
+      if (!user) return;
 
-  const removeFavorite = useCallback((propertyId: string) => {
-    setFavoriteIds((current) => current.filter((id) => id !== propertyId));
-  }, []);
+      setFavoriteIds((current) =>
+        current.includes(propertyId)
+          ? current.filter((id) => id !== propertyId)
+          : [...current, propertyId],
+      );
+    },
+    [user],
+  );
+
+  const removeFavorite = useCallback(
+    (propertyId: string) => {
+      if (!user) return;
+
+      setFavoriteIds((current) => current.filter((id) => id !== propertyId));
+    },
+    [user],
+  );
 
   const clearFavorites = useCallback(() => {
+    if (!user) return;
+
     setFavoriteIds([]);
-  }, []);
+  }, [user]);
 
   return (
     <FavoritesContext.Provider

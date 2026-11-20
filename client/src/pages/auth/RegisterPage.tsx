@@ -255,14 +255,14 @@ export default function RegisterPage() {
             <span className="text-sm leading-6 text-muted">
               I agree to Dwello's{" "}
               <Link
-                to="/terms"
+                to="#"
                 className="font-semibold text-brand hover:text-brand-dark"
               >
                 Terms of Service
               </Link>{" "}
               and{" "}
               <Link
-                to="/privacy"
+                to="#"
                 className="font-semibold text-brand hover:text-brand-dark"
               >
                 Privacy Policy
@@ -284,7 +284,7 @@ export default function RegisterPage() {
         </form>
 
         {/* Login link */}
-        <p className="mt-7 text-center text-sm text-muted">
+        <p className="mt-7 pt-2 text-center text-sm text-muted">
           Already have an account?{" "}
           <Link
             to="/login"

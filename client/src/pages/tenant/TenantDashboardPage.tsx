@@ -136,7 +136,7 @@ export default function TenantDashboardPage() {
             to="/saved"
             className="group rounded-xl border border-border bg-white p-4 shadow-soft transition duration-200 hover:-translate-y-0.5 hover:border-brand/30 hover:shadow-card"
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-2">
               <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-light text-brand">
                 <Heart size={19} />
               </span>
@@ -158,7 +158,7 @@ export default function TenantDashboardPage() {
             to="/my-enquiries"
             className="group rounded-xl border border-border bg-white p-4 shadow-soft transition duration-200 hover:-translate-y-0.5 hover:border-brand/30 hover:shadow-card"
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-2">
               <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-info-light text-info">
                 <MessageSquare size={19} />
               </span>
@@ -180,7 +180,7 @@ export default function TenantDashboardPage() {
             to="/my-enquiries"
             className="group rounded-xl border border-border bg-white p-4 shadow-soft transition duration-200 hover:-translate-y-0.5 hover:border-warning/40 hover:shadow-card"
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-2">
               <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-warning-light text-warning">
                 <Clock3 size={19} />
               </span>
@@ -209,7 +209,7 @@ export default function TenantDashboardPage() {
                 <h2 className="text-lg font-bold text-ink">Recently saved</h2>
               </div>
 
-              <p className="mt-1 text-sm text-muted">
+              <p className="mt-1 pt-1 text-sm text-muted">
                 Properties you've added to your collection.
               </p>
             </div>
@@ -238,11 +238,11 @@ export default function TenantDashboardPage() {
                 <Heart size={21} />
               </span>
 
-              <h3 className="mt-3 font-semibold text-ink">
+              <h3 className="mt-3 pt-3 font-semibold text-ink text-base">
                 No saved properties yet
               </h3>
 
-              <p className="mt-1 text-sm text-muted">
+              <p className="mt-1 pt-1 text-sm text-muted">
                 Save properties you're interested in and they'll appear here.
               </p>
 
@@ -265,7 +265,7 @@ export default function TenantDashboardPage() {
                 <h2 className="text-lg font-bold text-ink">Recent enquiries</h2>
               </div>
 
-              <p className="mt-1 text-sm text-muted">
+              <p className="mt-1 pt-1 text-sm text-muted">
                 A quick look at your latest property enquiries.
               </p>
             </div>

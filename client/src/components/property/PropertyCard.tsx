@@ -1,6 +1,7 @@
 import { motion } from "motion/react";
 import { Bath, BedDouble, Heart, MapPin, Maximize2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../hooks/AuthContext";
 
 export interface PropertyCardData {
   id: string;
@@ -31,14 +32,30 @@ function PropertyCard({
   className = "",
 }: PropertyCardProps) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const propertyPath = `/properties/${property.id}`;
 
   const handleFavorite = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
+
+    // Guests must authenticate before saving a property.
+    if (!user) {
+      navigate("/login", {
+        state: {
+          from: propertyPath,
+          message: "Please sign in to save this property.",
+        },
+      });
+
+      return;
+    }
+
     onFavoriteToggle?.(property.id);
   };
 
   const handleCardClick = () => {
-    navigate(`/properties/${property.id}`);
+    navigate(propertyPath);
   };
 
   const statusConfig = {
