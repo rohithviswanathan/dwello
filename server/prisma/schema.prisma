@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ======================================================
+// ENUMS
+// ======================================================
+
+enum UserRole {
+  TENANT
+  LANDLORD
+}
+
+enum PropertyStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum EnquiryStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CLOSED
+}
+
+// ======================================================
+// USER
+// ======================================================
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  phone        String?  @unique
+  passwordHash String
+  role         UserRole
+  avatarUrl    String?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  properties   Property[]
+  favorites    Favorite[]
+  enquiries    Enquiry[]
+  sessions     Session[]
+}
+
+// ======================================================
+// PROPERTY
+// ======================================================
+
+model Property {
+  id             String         @id @default(uuid())
+  title          String
+  description    String
+
+  propertyType   String
+  furnishing     String
+
+  rent           Decimal        @db.Decimal(12, 2)
+  deposit        Decimal        @db.Decimal(12, 2)
+
+  bedrooms       Int
+  bathrooms      Int
+  areaSqFt      Int
+
+  address        String
+  city           String
+  state          String
+  pincode         String
+
+  latitude       Float?
+  longitude      Float?
+
+  availableFrom  DateTime
+  status         PropertyStatus @default(DRAFT)
+
+  landlordId     String
+  landlord       User           @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+
+  images         PropertyImage[]
+  favorites      Favorite[]
+  enquiries      Enquiry[]
+
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([landlordId])
+  @@index([city])
+  @@index([status])
+  @@index([propertyType])
+}
+
+// ======================================================
+// PROPERTY IMAGE
+// ======================================================
+
+model PropertyImage {
+  id           String   @id @default(uuid())
+  url          String
+  publicId      String?
+  isPrimary    Boolean  @default(false)
+  sortOrder    Int      @default(0)
+
+  propertyId   String
+  property     Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+
+  @@index([propertyId])
+}
+
+// ======================================================
+// FAVORITE
+// ======================================================
+
+model Favorite {
+  id          String   @id @default(uuid())
+
+  tenantId    String
+  tenant      User     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@unique([tenantId, propertyId])
+  @@index([tenantId])
+  @@index([propertyId])
+}
+
+// ======================================================
+// ENQUIRY
+// ======================================================
+
+model Enquiry {
+  id           String        @id @default(uuid())
+
+  message      String
+  status       EnquiryStatus @default(PENDING)
+
+  tenantId     String
+  tenant       User          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  propertyId   String
+  property     Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([tenantId])
+  @@index([propertyId])
+  @@index([status])
+}
+
+// ======================================================
+// SESSION
+// ======================================================
+
+model Session {
+  id                String   @id @default(uuid())
+
+  refreshTokenHash   String   @unique
+
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  expiresAt          DateTime
+  revokedAt          DateTime?
+  lastUsedAt         DateTime?
+
+  createdAt          DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
