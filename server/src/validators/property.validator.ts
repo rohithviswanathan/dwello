@@ -35,3 +35,45 @@ export const createPropertySchema = z.object({
 });
 
 export type CreatePropertyInput = z.infer<typeof createPropertySchema>;
+
+export const updatePropertySchema = createPropertySchema
+  .partial()
+  .strict()
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "At least one field must be provided for update.",
+  });
+
+export type UpdatePropertyInput = z.infer<typeof updatePropertySchema>;
+
+export const publicPropertyQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).default(1),
+
+    limit: z.coerce.number().int().min(1).max(50).default(12),
+
+    city: z.string().trim().max(100).optional(),
+
+    propertyType: z.string().trim().max(100).optional(),
+
+    furnishing: z.string().trim().max(100).optional(),
+
+    bedrooms: z.coerce.number().int().min(0).max(50).optional(),
+
+    minRent: z.coerce.number().min(0).optional(),
+
+    maxRent: z.coerce.number().min(0).optional(),
+
+    sort: z.enum(["newest", "rent_asc", "rent_desc"]).default("newest"),
+  })
+  .refine(
+    (data) =>
+      data.minRent === undefined ||
+      data.maxRent === undefined ||
+      data.minRent <= data.maxRent,
+    {
+      message: "Minimum rent cannot exceed maximum rent.",
+      path: ["minRent"],
+    },
+  );
+
+export type PublicPropertyQuery = z.infer<typeof publicPropertyQuerySchema>;
