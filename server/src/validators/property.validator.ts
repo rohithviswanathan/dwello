@@ -51,6 +51,8 @@ export const publicPropertyQuerySchema = z
 
     limit: z.coerce.number().int().min(1).max(50).default(12),
 
+    keyword: z.string().trim().max(200).optional(),
+
     city: z.string().trim().max(100).optional(),
 
     propertyType: z.string().trim().max(100).optional(),
@@ -59,9 +61,17 @@ export const publicPropertyQuerySchema = z
 
     bedrooms: z.coerce.number().int().min(0).max(50).optional(),
 
+    bathrooms: z.coerce.number().int().min(0).max(50).optional(),
+
     minRent: z.coerce.number().min(0).optional(),
 
     maxRent: z.coerce.number().min(0).optional(),
+
+    minArea: z.coerce.number().int().positive().optional(),
+
+    maxArea: z.coerce.number().int().positive().optional(),
+
+    availableBefore: z.iso.date().optional(),
 
     sort: z.enum(["newest", "rent_asc", "rent_desc"]).default("newest"),
   })
@@ -73,6 +83,16 @@ export const publicPropertyQuerySchema = z
     {
       message: "Minimum rent cannot exceed maximum rent.",
       path: ["minRent"],
+    },
+  )
+  .refine(
+    (data) =>
+      data.minArea === undefined ||
+      data.maxArea === undefined ||
+      data.minArea <= data.maxArea,
+    {
+      message: "Minimum area cannot exceed maximum area.",
+      path: ["minArea"],
     },
   );
 
