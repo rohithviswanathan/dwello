@@ -6,6 +6,7 @@ import {
   createPropertySchema,
   updatePropertySchema,
   publicPropertyQuerySchema,
+  reorderPropertyImagesSchema,
 } from "../validators/property.validator";
 import { PropertyStatus, UserRole } from "../generated/prisma/enums";
 
@@ -346,6 +347,7 @@ export const deleteProperty = async (
       return;
     }
 
+    // Verify property existence and ownership.
     const existingProperty = await prisma.property.findUnique({
       where: {
         id: propertyId,
@@ -353,6 +355,11 @@ export const deleteProperty = async (
       select: {
         id: true,
         landlordId: true,
+        images: {
+          select: {
+            publicId: true,
+          },
+        },
       },
     });
 
@@ -374,16 +381,52 @@ export const deleteProperty = async (
       return;
     }
 
+    // Delete the property and its related database records.
     await prisma.property.delete({
       where: {
         id: propertyId,
       },
     });
 
+    // Clean up associated Cloudinary assets after database deletion.
+    const publicIds = existingProperty.images
+      .map((image) => image.publicId)
+      .filter((publicId): publicId is string => Boolean(publicId));
+
+    const cleanupResults = await Promise.allSettled(
+      publicIds.map((publicId) => deletePropertyImage(publicId)),
+    );
+
+    const failedCleanupIds = cleanupResults
+      .map((result, index) =>
+        result.status === "rejected" ||
+        (result.status === "fulfilled" && !result.value)
+          ? publicIds[index]
+          : null,
+      )
+      .filter((publicId): publicId is string => publicId !== null);
+
+    // Log failed cleanup attempts so they can be manually recovered.
+    if (failedCleanupIds.length > 0) {
+      console.error(
+        "Cloudinary cleanup failed for deleted property:",
+        propertyId,
+        failedCleanupIds,
+      );
+    }
+
     res.status(200).json({
       success: true,
-      message: "Property deleted successfully.",
+      message:
+        failedCleanupIds.length === 0
+          ? "Property and associated images deleted successfully."
+          : "Property deleted successfully, but some images could not be removed from image storage.",
       propertyId,
+      imageCleanup: {
+        total: publicIds.length,
+        deleted: publicIds.length - failedCleanupIds.length,
+        failed: failedCleanupIds.length,
+      },
     });
   } catch (error) {
     next(error);
@@ -1031,6 +1074,336 @@ export const getPropertyImagesController = async (
       success: true,
       count: images.length,
       data: images,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deletePropertyImageController = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const propertyId = Array.isArray(req.params.propertyId)
+      ? req.params.propertyId[0]
+      : req.params.propertyId;
+
+    const imageId = Array.isArray(req.params.imageId)
+      ? req.params.imageId[0]
+      : req.params.imageId;
+
+    const landlordId = req.user?.id;
+
+    if (!landlordId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required.",
+      });
+    }
+
+    // Verify the property exists and belongs to the landlord.
+    const property = await prisma.property.findUnique({
+      where: { id: propertyId },
+      select: {
+        id: true,
+        landlordId: true,
+      },
+    });
+
+    if (!property) {
+      return res.status(404).json({
+        success: false,
+        message: "Property not found.",
+      });
+    }
+
+    if (property.landlordId !== landlordId) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to manage this property.",
+      });
+    }
+
+    // Verify the image belongs to this property.
+    const image = await prisma.propertyImage.findFirst({
+      where: {
+        id: imageId,
+        propertyId,
+      },
+    });
+
+    if (!image) {
+      return res.status(404).json({
+        success: false,
+        message: "Property image not found.",
+      });
+    }
+
+    // Find a replacement primary image if the current primary is deleted.
+    const remainingImages = await prisma.propertyImage.findMany({
+      where: {
+        propertyId,
+        id: {
+          not: imageId,
+        },
+      },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      select: {
+        id: true,
+      },
+    });
+
+    const replacementPrimaryId = image.isPrimary
+      ? remainingImages[0]?.id
+      : undefined;
+
+    // Delete the image from Cloudinary first.
+    if (!image.publicId) {
+      return res.status(500).json({
+        success: false,
+        message: "Image storage identifier is missing.",
+      });
+    }
+
+    const cloudinaryDeleted = await deletePropertyImage(image.publicId);
+
+    if (!cloudinaryDeleted) {
+      return res.status(502).json({
+        success: false,
+        message: "Unable to delete image from image storage.",
+      });
+    }
+
+    // Update database records transactionally.
+    await prisma.$transaction(async (tx) => {
+      await tx.propertyImage.delete({
+        where: { id: imageId },
+      });
+
+      if (image.isPrimary && replacementPrimaryId) {
+        // Clear primary status before assigning the replacement.
+        await tx.propertyImage.updateMany({
+          where: { propertyId },
+          data: { isPrimary: false },
+        });
+
+        await tx.propertyImage.update({
+          where: { id: replacementPrimaryId },
+          data: { isPrimary: true },
+        });
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Property image deleted successfully.",
+      data: {
+        deletedImageId: imageId,
+        wasPrimary: image.isPrimary,
+        replacementPrimaryId: replacementPrimaryId ?? null,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const setPrimaryPropertyImageController = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const propertyId = Array.isArray(req.params.propertyId)
+      ? req.params.propertyId[0]
+      : req.params.propertyId;
+
+    const imageId = Array.isArray(req.params.imageId)
+      ? req.params.imageId[0]
+      : req.params.imageId;
+
+    const landlordId = req.user?.id;
+
+    if (!landlordId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required.",
+      });
+    }
+
+    // Verify property existence and ownership.
+    const property = await prisma.property.findUnique({
+      where: { id: propertyId },
+      select: {
+        id: true,
+        landlordId: true,
+      },
+    });
+
+    if (!property) {
+      return res.status(404).json({
+        success: false,
+        message: "Property not found.",
+      });
+    }
+
+    if (property.landlordId !== landlordId) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to manage this property.",
+      });
+    }
+
+    // Verify that the image belongs to the specified property.
+    const image = await prisma.propertyImage.findFirst({
+      where: {
+        id: imageId,
+        propertyId,
+      },
+      select: {
+        id: true,
+        propertyId: true,
+        isPrimary: true,
+      },
+    });
+
+    if (!image) {
+      return res.status(404).json({
+        success: false,
+        message: "Property image not found.",
+      });
+    }
+
+    // Avoid unnecessary database updates if already primary.
+    if (image.isPrimary) {
+      return res.status(200).json({
+        success: true,
+        message: "Image is already the primary image.",
+        data: image,
+      });
+    }
+
+    // Update primary-image selection atomically.
+    const updatedImage = await prisma.$transaction(async (tx) => {
+      await tx.propertyImage.updateMany({
+        where: { propertyId },
+        data: { isPrimary: false },
+      });
+
+      return tx.propertyImage.update({
+        where: { id: imageId },
+        data: { isPrimary: true },
+      });
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Primary property image updated successfully.",
+      data: updatedImage,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const reorderPropertyImagesController = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const propertyId = Array.isArray(req.params.propertyId)
+      ? req.params.propertyId[0]
+      : req.params.propertyId;
+
+    const landlordId = req.user?.id;
+
+    if (!landlordId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required.",
+      });
+    }
+
+    // Verify property existence and ownership.
+    const property = await prisma.property.findUnique({
+      where: { id: propertyId },
+      select: {
+        id: true,
+        landlordId: true,
+      },
+    });
+
+    if (!property) {
+      return res.status(404).json({
+        success: false,
+        message: "Property not found.",
+      });
+    }
+
+    if (property.landlordId !== landlordId) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to manage this property.",
+      });
+    }
+
+    // Validate the request body.
+    const validationResult = reorderPropertyImagesSchema.safeParse(req.body);
+
+    if (!validationResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid image reorder request.",
+        errors: validationResult.error.flatten(),
+      });
+    }
+
+    const { imageIds } = validationResult.data;
+
+    // Retrieve all images currently belonging to the property.
+    const existingImages = await prisma.propertyImage.findMany({
+      where: { propertyId },
+      select: { id: true },
+    });
+
+    // Ensure the request contains every image exactly once.
+    const existingImageIds = existingImages.map((image) => image.id);
+
+    if (
+      existingImageIds.length !== imageIds.length ||
+      !existingImageIds.every((id) => imageIds.includes(id))
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "The image IDs must include every image belonging to this property exactly once.",
+      });
+    }
+
+    // Update image ordering within a transaction.
+    await prisma.$transaction(
+      imageIds.map((imageId, index) =>
+        prisma.propertyImage.update({
+          where: { id: imageId },
+          data: { sortOrder: index },
+        }),
+      ),
+    );
+
+    // Retrieve images in their newly assigned order.
+    const reorderedImages = await prisma.propertyImage.findMany({
+      where: { propertyId },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Property images reordered successfully.",
+      count: reorderedImages.length,
+      data: reorderedImages,
     });
   } catch (error) {
     next(error);
