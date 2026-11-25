@@ -12,6 +12,9 @@ import {
   unarchiveProperty,
   uploadPropertyImagesController,
   getPropertyImagesController,
+  deletePropertyImageController,
+  setPrimaryPropertyImageController,
+  reorderPropertyImagesController,
 } from "../controllers/property.controller";
 
 import {
@@ -81,6 +84,27 @@ router.get(
   "/:propertyId/images",
   optionalAuthenticate,
   getPropertyImagesController,
+);
+
+router.delete(
+  "/:propertyId/images/:imageId",
+  authenticate,
+  requireRole(UserRole.LANDLORD),
+  deletePropertyImageController,
+);
+
+router.patch(
+  "/:propertyId/images/:imageId/primary",
+  authenticate,
+  requireRole(UserRole.LANDLORD),
+  setPrimaryPropertyImageController,
+);
+
+router.patch(
+  "/:propertyId/images/reorder",
+  authenticate,
+  requireRole(UserRole.LANDLORD),
+  reorderPropertyImagesController,
 );
 
 // Update property
