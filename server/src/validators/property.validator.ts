@@ -97,3 +97,20 @@ export const publicPropertyQuerySchema = z
   );
 
 export type PublicPropertyQuery = z.infer<typeof publicPropertyQuerySchema>;
+
+export const reorderPropertyImagesSchema = z
+  .object({
+    imageIds: z
+      .array(z.uuid())
+      .min(1, "At least one image ID is required.")
+      .max(10, "A maximum of 10 image IDs is allowed."),
+  })
+  .strict()
+  .refine((data) => new Set(data.imageIds).size === data.imageIds.length, {
+    message: "Duplicate image IDs are not allowed.",
+    path: ["imageIds"],
+  });
+
+export type ReorderPropertyImagesInput = z.infer<
+  typeof reorderPropertyImagesSchema
+>;
