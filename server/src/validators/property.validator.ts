@@ -1,38 +1,40 @@
 import { z } from "zod";
 
-export const createPropertySchema = z.object({
-  title: z.string().trim().min(5).max(150),
+export const createPropertySchema = z
+  .object({
+    title: z.string().trim().min(5).max(150),
 
-  description: z.string().trim().min(20).max(5000),
+    description: z.string().trim().min(20).max(5000),
 
-  propertyType: z.string().trim().min(1).max(100),
+    propertyType: z.string().trim().min(1).max(100),
 
-  furnishing: z.string().trim().min(1).max(100),
+    furnishing: z.string().trim().min(1).max(100),
 
-  rent: z.number().positive(),
+    rent: z.number().positive(),
 
-  deposit: z.number().nonnegative(),
+    deposit: z.number().nonnegative(),
 
-  bedrooms: z.number().int().min(0).max(50),
+    bedrooms: z.number().int().min(0).max(50),
 
-  bathrooms: z.number().int().min(0).max(50),
+    bathrooms: z.number().int().min(0).max(50),
 
-  areaSqFt: z.number().int().positive(),
+    areaSqFt: z.number().int().positive(),
 
-  address: z.string().trim().min(5).max(500),
+    address: z.string().trim().min(5).max(500),
 
-  city: z.string().trim().min(1).max(100),
+    city: z.string().trim().min(1).max(100),
 
-  state: z.string().trim().min(1).max(100),
+    state: z.string().trim().min(1).max(100),
 
-  pincode: z.string().trim().min(4).max(12),
+    pincode: z.string().trim().min(4).max(12),
 
-  latitude: z.number().min(-90).max(90).optional(),
+    latitude: z.number().min(-90).max(90).optional(),
 
-  longitude: z.number().min(-180).max(180).optional(),
+    longitude: z.number().min(-180).max(180).optional(),
 
-  availableFrom: z.iso.datetime(),
-});
+    availableFrom: z.iso.datetime(),
+  })
+  .strict();
 
 export type CreatePropertyInput = z.infer<typeof createPropertySchema>;
 
@@ -47,7 +49,7 @@ export type UpdatePropertyInput = z.infer<typeof updatePropertySchema>;
 
 export const publicPropertyQuerySchema = z
   .object({
-    page: z.coerce.number().int().min(1).default(1),
+    page: z.coerce.number().int().min(1).max(1_000_000).default(1),
 
     limit: z.coerce.number().int().min(1).max(50).default(12),
 
@@ -75,6 +77,7 @@ export const publicPropertyQuerySchema = z
 
     sort: z.enum(["newest", "rent_asc", "rent_desc"]).default("newest"),
   })
+  .strict()
   .refine(
     (data) =>
       data.minRent === undefined ||

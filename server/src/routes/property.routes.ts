@@ -26,6 +26,7 @@ import {
 import { UserRole } from "../generated/prisma/enums";
 import { uploadPropertyImages } from "../middleware/upload.middleware";
 import { validatePropertyImages } from "../middleware/image-validation.middleware";
+import { validateUuidParams } from "../middleware/validate-uuid.middleware";
 
 const router = Router();
 
@@ -48,6 +49,7 @@ router.post(
   "/:propertyId/images",
   authenticate,
   requireRole(UserRole.LANDLORD),
+  validateUuidParams("propertyId"),
   uploadPropertyImages,
   validatePropertyImages,
   uploadPropertyImagesController,
@@ -58,6 +60,7 @@ router.patch(
   "/:propertyId/publish",
   authenticate,
   requireRole(UserRole.LANDLORD),
+  validateUuidParams("propertyId"),
   publishProperty,
 );
 
@@ -66,6 +69,7 @@ router.patch(
   "/:propertyId/archive",
   authenticate,
   requireRole(UserRole.LANDLORD),
+  validateUuidParams("propertyId"),
   archiveProperty,
 );
 
@@ -74,36 +78,50 @@ router.patch(
   "/:propertyId/unarchive",
   authenticate,
   requireRole(UserRole.LANDLORD),
+  validateUuidParams("propertyId"),
   unarchiveProperty,
 );
 
 // Get single property
-router.get("/:propertyId", optionalAuthenticate, getPropertyById);
+router.get(
+  "/:propertyId",
+  optionalAuthenticate,
+  validateUuidParams("propertyId"),
+  getPropertyById,
+);
 
+// Get property images
 router.get(
   "/:propertyId/images",
   optionalAuthenticate,
+  validateUuidParams("propertyId"),
   getPropertyImagesController,
 );
 
+// Delete property image
 router.delete(
   "/:propertyId/images/:imageId",
   authenticate,
   requireRole(UserRole.LANDLORD),
+  validateUuidParams("propertyId", "imageId"),
   deletePropertyImageController,
 );
 
+// Set primary property image
 router.patch(
   "/:propertyId/images/:imageId/primary",
   authenticate,
   requireRole(UserRole.LANDLORD),
+  validateUuidParams("propertyId", "imageId"),
   setPrimaryPropertyImageController,
 );
 
+// Reorder property images
 router.patch(
   "/:propertyId/images/reorder",
   authenticate,
   requireRole(UserRole.LANDLORD),
+  validateUuidParams("propertyId"),
   reorderPropertyImagesController,
 );
 
@@ -112,6 +130,7 @@ router.put(
   "/:propertyId",
   authenticate,
   requireRole(UserRole.LANDLORD),
+  validateUuidParams("propertyId"),
   updateProperty,
 );
 
@@ -120,6 +139,7 @@ router.delete(
   "/:propertyId",
   authenticate,
   requireRole(UserRole.LANDLORD),
+  validateUuidParams("propertyId"),
   deleteProperty,
 );
 

@@ -20,36 +20,51 @@ import {
 // VALIDATION
 // ======================================================
 
-const registerSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(2, "Name must be at least 2 characters.")
-    .max(100),
-  email: z
-    .string()
-    .trim()
-    .email("Please provide a valid email address.")
-    .max(255),
-  phone: z
-    .string()
-    .trim()
-    .optional()
-    .refine(
-      (value) => !value || /^\+?[0-9]{7,15}$/.test(value),
-      "Please provide a valid phone number.",
-    ),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters.")
-    .max(128, "Password cannot exceed 128 characters."),
-  role: z.enum(["tenant", "landlord"]),
-});
+const registerSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(2, "Name must be at least 2 characters.")
+      .max(100),
 
-const loginSchema = z.object({
-  email: z.string().trim().email("Please provide a valid email address."),
-  password: z.string().min(1, "Password is required."),
-});
+    email: z
+      .string()
+      .trim()
+      .max(255, "Email must not exceed 255 characters.")
+      .pipe(z.email("Please provide a valid email address.")),
+
+    phone: z
+      .string()
+      .trim()
+      .optional()
+      .refine(
+        (value) => !value || /^\+?[0-9]{7,15}$/.test(value),
+        "Please provide a valid phone number.",
+      ),
+
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters.")
+      .refine(
+        (value) => Buffer.byteLength(value, "utf8") <= 72,
+        "Password cannot exceed 72 bytes.",
+      ),
+
+    role: z.enum(["tenant", "landlord"]),
+  })
+  .strict();
+
+const loginSchema = z
+  .object({
+    email: z
+      .string()
+      .trim()
+      .pipe(z.email("Please provide a valid email address.")),
+
+    password: z.string().min(1, "Password is required."),
+  })
+  .strict();
 
 // ======================================================
 // REGISTER
@@ -408,6 +423,7 @@ export const getCurrentUser = async (
         name: true,
         email: true,
         phone: true,
+        location: true,
         role: true,
         avatarUrl: true,
         createdAt: true,

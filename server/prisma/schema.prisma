@@ -38,6 +38,7 @@ model User {
   name         String
   email        String   @unique
   phone        String?  @unique
+  location     String?
   passwordHash String
   role         UserRole
   avatarUrl    String?

@@ -1,17 +1,27 @@
 import { Router } from "express";
+
 import {
   createEnquiry,
   getMyEnquiries,
   getReceivedEnquiries,
   updateEnquiryStatus,
 } from "../controllers/enquiry.controller";
+
 import { authenticate, requireRole } from "../middleware/auth.middleware";
+import { validateUuidParams } from "../middleware/validate-uuid.middleware";
 
 const router = Router();
 
-// Tenant: create enquiries and view submitted enquiries.
-router.post("/:propertyId", authenticate, requireRole("TENANT"), createEnquiry);
+// Tenant: create enquiries.
+router.post(
+  "/:propertyId",
+  authenticate,
+  requireRole("TENANT"),
+  validateUuidParams("propertyId"),
+  createEnquiry,
+);
 
+// Tenant: view submitted enquiries.
 router.get(
   "/my-enquiries",
   authenticate,
@@ -32,6 +42,7 @@ router.patch(
   "/:enquiryId/status",
   authenticate,
   requireRole("LANDLORD"),
+  validateUuidParams("enquiryId"),
   updateEnquiryStatus,
 );
 

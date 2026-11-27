@@ -2,13 +2,13 @@ import { NextFunction, Request, Response } from "express";
 import { MulterError } from "multer";
 
 export const notFoundHandler = (
-  req: Request,
+  _req: Request,
   res: Response,
   _next: NextFunction,
 ) => {
   res.status(404).json({
     success: false,
-    message: `Route not found: ${req.method} ${req.originalUrl}`,
+    message: "Route not found.",
   });
 };
 
@@ -47,7 +47,7 @@ export const errorHandler = (
     });
   }
 
-  // Custom errors carrying an HTTP status code
+  // Custom errors carrying a valid HTTP 4xx status code
   if (
     err instanceof Error &&
     "statusCode" in err &&
@@ -62,12 +62,39 @@ export const errorHandler = (
   }
 
   // Unexpected errors
-  if (err instanceof Error) {
-    console.error(err.stack || err.message);
-  } else {
-    console.error("Unknown error:", err);
+
+  // Oversized request bodies
+  if (
+    err instanceof Error &&
+    "type" in err &&
+    err.type === "entity.too.large"
+  ) {
+    return res.status(413).json({
+      success: false,
+      message: "Request body exceeds the maximum allowed size of 100 KB.",
+    });
   }
 
+  // Malformed JSON request bodies
+  if (
+    err instanceof SyntaxError &&
+    "status" in err &&
+    err.status === 400 &&
+    "body" in err
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid JSON request body.",
+    });
+  }
+
+  if (err instanceof Error) {
+    console.error("[API Error]", err.stack || err.message);
+  } else {
+    console.error("[API Error] Unknown error:", err);
+  }
+
+  // Never expose internal server error details to clients
   return res.status(500).json({
     success: false,
     message: "Internal server error.",
